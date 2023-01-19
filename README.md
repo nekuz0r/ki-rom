@@ -87,14 +87,20 @@ This patch remaps I/O memory addresses to allow KI1 ROM to run on KI2 dedicated 
 
 This patch disable the copy protection of the KI1 to KI2 upgrade kit.
 
+NOTE: This patch is not based and/or related to a patch made by the member of the arcade-projects.com forum @[DogP](https://www.arcade-projects.com/members/dogp.2487/)
+
 ### Any IDE
 
-This patch disable the IDE drive model check, allowing to run the game with any IDE drive.
+This patch disable the IDE drive model check, allowing to run the game with any IDE compatible drive model.
 
 ### Soft reset
 
 This patch adds an input combination allowing to soft reset the game by pressing
 P1 LEFT + P1 START + P2 RIGHT + P2 Start.
+
+### Infinite attract mode music
+
+This patch disable the fade out of the music in attract mode (demo mode), allowing the music to play indefinitely.
 
 ## DipSwitch S1
 
