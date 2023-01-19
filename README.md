@@ -21,9 +21,9 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | KI2 l1.4    | KI2-U96 A-20351 | OK     |                       |
 | KI2 l1.4k   | KI2-U96 A-20351 | NOK    | use KI2 l1.4 instead  |
 
-OK: Supported
-NOK: Not Supported
-P: Partially Supported (requires full original hardware)
+- OK: Supported
+- NOK: Not Supported
+- P: Partially Supported (requires full original hardware)
 
 ## Features
 
@@ -38,6 +38,8 @@ This boot rom introduces new features compared to the stock boot rom.
 
 ## Soft Multiboot
 
+This ROM version adds the ability to boot multiple game ROMs (KI1 + KI2) from the same board and to switch from one to the other without requiring to toggle a physical switch and power cycling.
+
 The default game rom is set with the S1:6 dipswitch bit (Off = K1, On = KI2).
 
 When performing a soft reset a selection screen is displayed, pressing P1 START will start KI1
@@ -48,8 +50,6 @@ and pressing P2 START will start KI2.
 ### KI2-U96 A-20351 remap
 
 This patch remaps I/O memory addresses to allow KI1 ROM to run on KI2 dedicated hardware.
-
-NOTE: for the moment only KI l1.5di is supported
 
 ### K12-U1 A-20383 protection bypass
 
