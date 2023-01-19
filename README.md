@@ -4,37 +4,69 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 
 ## Compatibility
 
-| ROM version | Board version   | Status | Note                  |
-| ----------- | --------------- | ------ | --------------------- |
-| KI l1.5di   | KI-U96 A-19489  | OK     |                       |
-| KI l1.5d    | KI-U96 A-19489  | P      | need ide patch        |
-| KI l1.4     | KI-U96 A-19489  | P      | need ide patch        |
-| KI l1.3     | KI-U96 A-19489  | P      | need ide patch        |
-| KI p47      | KI-U96 A-19489  | NOK    | unpack not working    |
-| KI2 l1.4    | KI-U96 A-19489  | NOK    | use KI2 l1.4k         |
-| KI2 l1.4k   | KI-U96 A-19489  | OK     |                       |
-| KI l1.5di   | KI2-U96 A-20351 | OK     |                       |
-| KI l1.5d    | KI2-U96 A-20351 | NOK    | use KI l1.5di instead |
-| KI l1.4     | KI2-U96 A-20351 | NOK    | need remap+ide patch  |
-| KI l1.3     | KI2-U96 A-20351 | NOK    | need remap+ide patch  |
-| KI p47      | KI2-U96 A-20351 | NOK    | unpack not working    |
-| KI2 l1.4    | KI2-U96 A-20351 | OK     |                       |
-| KI2 l1.4k   | KI2-U96 A-20351 | NOK    | use KI2 l1.4 instead  |
+### KI-U96 A-19489
 
-- OK: Supported
-- NOK: Not Supported
-- P: Partially Supported (requires full original hardware)
+| ROM version | Status             | Note                     |
+| ----------- | ------------------ | ------------------------ |
+| KI l1.5di   | :white_check_mark: |                          |
+| KI l1.5d    | :warning:          | need any-ide patch       |
+| KI l1.4     | :warning:          | need any-ide patch       |
+| KI l1.3     | :warning:          | need any-ide patch       |
+| KI p47      | :warning:          | need any-ide patch       |
+| KI2 l1.0    | :no_entry_sign:    | need remap+any-ide patch |
+| KI2 l1.1    | :no_entry_sign:    | need remap+any-ide patch |
+| KI2 l1.3    | :no_entry_sign:    | use KI2 l1.3k instead    |
+| KI2 l1.3k   | :warning:          | need any-ide patch       |
+| KI2 l1.4    | :no_entry_sign:    | use KI2 d1.4p instead    |
+| KI2 l1.4p   | :no_entry_sign:    | use KI2 d1.4p instead    |
+| KI2 d1.4p   | :white_check_mark: |                          |
+| KI2 l1.4k   | :warning:          | use KI2 d1.4p instead    |
+
+### KI2-U96 A-20351
+
+| ROM version | Status             | Note                     |
+| ----------- | ------------------ | ------------------------ |
+| KI l1.5di   | :white_check_mark: |                          |
+| KI l1.5d    | :no_entry_sign:    | use KI l1.5di instead    |
+| KI l1.4     | :no_entry_sign:    | need remap+any-ide patch |
+| KI l1.3     | :no_entry_sign:    | need remap+any-ide patch |
+| KI p47      | :no_entry_sign:    | need remap+any-ide patch |
+| KI2 l1.0    | :warning:          | need any-ide patch       |
+| KI2 l1.1    | :warning:          | need any-ide patch       |
+| KI2 l1.2    | :warning:          | need any-ide patch       |
+| KI2 l1.3    | :warning:          | need any-ide patch       |
+| KI2 l1.3k   | :no_entry_sign:    | use KI2 l1.3 instead     |
+| KI2 l1.4    | :warning:          | use KI2 l1.4p instead    |
+| KI2 l1.4p   | :white_check_mark: |                          |
+| KI2 d1.4p   | :no_entry_sign:    | use KI2 l1.4p instead    |
+| KI2 l1.4k   | :no_entry_sign:    | use KI2 l1.4p instead    |
+
+- :white_check_mark:: Fully supported
+- :no_entry_sign:: Not Supported (requires patches)
+- :warning:: Partially Supported (requires full original hardware)
 
 ## Features
 
 This boot rom introduces new features compared to the stock boot rom.
 
 - LZSS compression/decompression of game ROM (faster boot time)
-- Self test (SRAM, VRAM, DRAM, IDE) (S1:8 to pause boot)
+- POST (Power On Self Test) (S1:8 to pause boot)
 - In-memory patching of game ROM
 - Fixes no sound at boot on MAME (if S1:7 is enabled)
 - Soft Multiboot K1 & K2 (Requires additional hardware & compilation flag)
 - Additional dipswitch configuration bits
+
+## POST
+
+Power On Self Test will check for faulty or missing hardware.
+
+Tested hardware:
+- SRAM
+- VRAM
+- DRAM
+- IDE
+
+When S1:8 dipswitch bit is turned on POST result will be kept on screen until any P1 input is triggered.
 
 ## Soft Multiboot
 
@@ -75,11 +107,8 @@ P1 LEFT + P1 START + P2 RIGHT + P2 Start.
 ## To do
 
 - Enter infinite loop if a self test failed
-- Write remap & ide patch for KI l1.5d
-- Write remap & ide patch for KI l1.4
-- Write remap & ide patch for KI l1.3
-- Include KI2 1.0, 1.1, 1.3, 1.3k
-- Add support for KI1 p47 unpack
+- Write any-ide patches for partially supported ROMs
+- Write remap patches for non-supported ROMs
 
 ## Acknowledgments
 
