@@ -9,9 +9,9 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | ROM version | Status             | Note                     |
 | ----------- | ------------------ | ------------------------ |
 | KI l1.5di   | :white_check_mark: |                          |
-| KI l1.5d    | :warning:          | need any-ide patch       |
-| KI l1.4     | :warning:          | need any-ide patch       |
-| KI l1.3     | :warning:          | need any-ide patch       |
+| KI l1.5d    | :white_check_mark: |                          |
+| KI l1.4     | :white_check_mark: |                          |
+| KI l1.3     | :white_check_mark: |                          |
 | KI p47      | :warning:          | need any-ide patch       |
 | KI2 l1.0    | :no_entry_sign:    | need remap patch         |
 | KI2 l1.1    | :no_entry_sign:    | need remap patch         |
@@ -27,10 +27,10 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | ROM version | Status             | Note                     |
 | ----------- | ------------------ | ------------------------ |
 | KI l1.5di   | :white_check_mark: |                          |
-| KI l1.5d    | :no_entry_sign:    | use KI l1.5di instead    |
-| KI l1.4     | :no_entry_sign:    | need remap+any-ide patch |
-| KI l1.3     | :no_entry_sign:    | need remap+any-ide patch |
-| KI p47      | :no_entry_sign:    | need remap+any-ide patch |
+| KI l1.5d    | :no_entry_sign:    | need remap patch         |
+| KI l1.4     | :no_entry_sign:    | need remap patch         |
+| KI l1.3     | :no_entry_sign:    | need remap patch         |
+| KI p47      | :no_entry_sign:    | need remap patch         |
 | KI2 l1.0    | :white_check_mark: |                          |
 | KI2 l1.1    | :white_check_mark: |                          |
 | KI2 l1.3    | :white_check_mark: |                          |
