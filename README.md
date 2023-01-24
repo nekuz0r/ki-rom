@@ -13,14 +13,14 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | KI l1.4     | :warning:          | need any-ide patch       |
 | KI l1.3     | :warning:          | need any-ide patch       |
 | KI p47      | :warning:          | need any-ide patch       |
-| KI2 l1.0    | :no_entry_sign:    | need remap+any-ide patch |
-| KI2 l1.1    | :no_entry_sign:    | need remap+any-ide patch |
-| KI2 l1.3    | :no_entry_sign:    | use KI2 l1.3k instead    |
-| KI2 l1.3k   | :warning:          | need any-ide patch       |
-| KI2 l1.4    | :no_entry_sign:    | use KI2 d1.4p instead    |
-| KI2 l1.4p   | :no_entry_sign:    | use KI2 d1.4p instead    |
+| KI2 l1.0    | :no_entry_sign:    | need remap patch         |
+| KI2 l1.1    | :no_entry_sign:    | need remap patch         |
+| KI2 l1.3    | :no_entry_sign:    | use KI2 l1.3k            |
+| KI2 l1.3k   | :white_check_mark: |                          |
+| KI2 l1.4    | :no_entry_sign:    | use KI2 l1.4k            |
+| KI2 l1.4p   | :no_entry_sign:    | unofficial rom           |
 | KI2 d1.4p   | :white_check_mark: |                          |
-| KI2 l1.4k   | :warning:          | use KI2 d1.4p instead    |
+| KI2 l1.4k   | :white_check_mark: |                          |
 
 ### KI2-U96 A-20351
 
@@ -31,15 +31,14 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | KI l1.4     | :no_entry_sign:    | need remap+any-ide patch |
 | KI l1.3     | :no_entry_sign:    | need remap+any-ide patch |
 | KI p47      | :no_entry_sign:    | need remap+any-ide patch |
-| KI2 l1.0    | :warning:          | need any-ide patch       |
-| KI2 l1.1    | :warning:          | need any-ide patch       |
-| KI2 l1.2    | :warning:          | need any-ide patch       |
-| KI2 l1.3    | :warning:          | need any-ide patch       |
-| KI2 l1.3k   | :no_entry_sign:    | use KI2 l1.3 instead     |
-| KI2 l1.4    | :warning:          | use KI2 l1.4p instead    |
+| KI2 l1.0    | :white_check_mark: |                          |
+| KI2 l1.1    | :white_check_mark: |                          |
+| KI2 l1.3    | :white_check_mark: |                          |
+| KI2 l1.3k   | :no_entry_sign:    | use KI2 l1.3             |
+| KI2 l1.4    | :white_check_mark: |                          |
 | KI2 l1.4p   | :white_check_mark: |                          |
-| KI2 d1.4p   | :no_entry_sign:    | use KI2 l1.4p instead    |
-| KI2 l1.4k   | :no_entry_sign:    | use KI2 l1.4p instead    |
+| KI2 d1.4p   | :no_entry_sign:    | unofficial rom           |
+| KI2 l1.4k   | :no_entry_sign:    | unofficial rom           |
 
 - :white_check_mark:: Fully supported
 - :no_entry_sign:: Not Supported (requires patches)
