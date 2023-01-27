@@ -8,8 +8,8 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 
 | ROM version | Status             | Note                     |
 | ----------- | ------------------ | ------------------------ |
-| KI l1.5di   | :white_check_mark: |                          |
 | KI l1.5d    | :white_check_mark: |                          |
+| KI l1.5di   | :white_check_mark: | unofficial rom           |
 | KI l1.4     | :white_check_mark: |                          |
 | KI l1.3     | :white_check_mark: |                          |
 | KI p47      | :warning:          | need any-ide patch       |
@@ -18,27 +18,27 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | KI2 l1.3    | :no_entry_sign:    | use KI2 l1.3k            |
 | KI2 l1.3k   | :white_check_mark: |                          |
 | KI2 l1.4    | :no_entry_sign:    | use KI2 l1.4k            |
-| KI2 l1.4p   | :no_entry_sign:    | unofficial rom           |
-| KI2 d1.4p   | :white_check_mark: |                          |
 | KI2 l1.4k   | :white_check_mark: |                          |
+| KI2 l1.4p   | :no_entry_sign:    | unofficial rom           |
+| KI2 d1.4p   | :white_check_mark: | unofficial rom           |
 
 ### KI2-U96 A-20351
 
 | ROM version | Status             | Note                     |
 | ----------- | ------------------ | ------------------------ |
 | KI l1.5di   | :white_check_mark: |                          |
-| KI l1.5d    | :no_entry_sign:    | need remap patch         |
-| KI l1.4     | :no_entry_sign:    | need remap patch         |
-| KI l1.3     | :no_entry_sign:    | need remap patch         |
+| KI l1.5d    | :white_check_mark: |                          |
+| KI l1.4     | :white_check_mark: |                          |
+| KI l1.3     | :white_check_mark: |                          |
 | KI p47      | :no_entry_sign:    | need remap patch         |
 | KI2 l1.0    | :white_check_mark: |                          |
 | KI2 l1.1    | :white_check_mark: |                          |
 | KI2 l1.3    | :white_check_mark: |                          |
 | KI2 l1.3k   | :no_entry_sign:    | use KI2 l1.3             |
 | KI2 l1.4    | :white_check_mark: |                          |
-| KI2 l1.4p   | :white_check_mark: |                          |
+| KI2 l1.4k   | :no_entry_sign:    | use KI2 l1.4             |
+| KI2 l1.4p   | :white_check_mark: | unofficial rom           |
 | KI2 d1.4p   | :no_entry_sign:    | unofficial rom           |
-| KI2 l1.4k   | :no_entry_sign:    | unofficial rom           |
 
 - :white_check_mark:: Fully supported
 - :no_entry_sign:: Not Supported (requires patches)
@@ -112,8 +112,8 @@ This patch disable the fade out of the music in attract mode (demo mode), allowi
 ## To do
 
 - Enter infinite loop if a self test failed
-- Write any-ide patches for partially supported ROMs
-- Write remap patches for non-supported ROMs
+- Write any-ide patches (KI1 p47)
+- Write remap patches (K1 p47, KI2 1.0/1.1)
 
 ## Acknowledgments
 
