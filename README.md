@@ -78,6 +78,19 @@ and pressing P2 START will start KI2.
 
 ## Patches
 
+| ROM version | Remap              | SecBypass          | AnyIDE             | MultiHD            | Reset              | Music Fade out     | Whiteblood S1:6    |
+| ----------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | 
+| KI l1.5d    | :white_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| KI l1.5di   | :white_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| KI l1.4     | :white_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| KI l1.3     | :white_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| KI2 l1.4    |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| KI2 l1.4k   |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| KI2 l1.3    |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| KI2 l1.3k   |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| KI2 l1.1    | :construction:     |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| KI2 l1.0    | :construction:     |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+
 ### KI2-U96 A-20351 remap
 
 This patch remaps I/O memory addresses to allow KI1 ROM to run on KI2 dedicated hardware.
