@@ -13,8 +13,8 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 | KI l1.4     | :white_check_mark: |                          |
 | KI l1.3     | :white_check_mark: |                          |
 | KI p47      | :warning:          | need any-ide patch       |
-| KI2 l1.0    | :no_entry_sign:    | need remap patch         |
-| KI2 l1.1    | :no_entry_sign:    | need remap patch         |
+| KI2 l1.0    | :construction:     | need remap patch         |
+| KI2 l1.1    | :construction:     | need remap patch         |
 | KI2 l1.3    | :no_entry_sign:    | use KI2 l1.3k            |
 | KI2 l1.3k   | :white_check_mark: |                          |
 | KI2 l1.4    | :no_entry_sign:    | use KI2 l1.4k            |
