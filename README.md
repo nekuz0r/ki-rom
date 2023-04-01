@@ -26,7 +26,7 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 
 | ROM version | Status             | Note                     |
 | ----------- | ------------------ | ------------------------ |
-| KI l1.5di   | :white_check_mark: |                          |
+| KI l1.5di   | :white_check_mark: | unofficial rom           |
 | KI l1.5d    | :white_check_mark: |                          |
 | KI l1.4     | :white_check_mark: |                          |
 | KI l1.3     | :white_check_mark: |                          |
@@ -49,9 +49,10 @@ This project is an open source Boot ROM for Killer instinct 1 & 2 arcade game de
 This boot rom introduces new features compared to the stock boot rom.
 
 - LZSS compression/decompression of game ROM (faster boot time)
-- POST (Power On Self Test) (S1:8 to pause boot)
+- ~~POST (Power On Self Test)~~ (S1:7 to pause boot)
 - In-memory patching of game ROM
-- Fixes no sound at boot on MAME (if S1:7 is enabled)
+- Fixes no sound at boot on MAME
+- Replaced "Bong" boot sound by "Fight On!" (S1:7 needs to be set)
 - Soft Multiboot K1 & K2 (Requires additional hardware & compilation flag)
 - Additional dipswitch configuration bits
 
@@ -65,7 +66,9 @@ Tested hardware:
 - DRAM
 - IDE
 
-When S1:8 dipswitch bit is turned on POST result will be kept on screen until any P1 input is triggered.
+When S1:7 dipswitch bit is turned on POST result will be kept on screen until any P1 input is triggered.
+
+**NOTE: This has been moved to a dedicated board testing ROM**
 
 ## Soft Multiboot
 
@@ -116,11 +119,10 @@ This patch disable the fade out of the music in attract mode (demo mode), allowi
 
 ## DipSwitch S1
 
-| bit | description               | Off | On  |
-| --- | ------------------------- | --- | --  |
-| 6   | Select default game ROM   | KI1 | KI2 |
-| 7   | Disable sound test (Bong) | Off | On  |
-| 8   | Wait for input on POST    | Off | On  |
+| bit | description               | Off  | On        |
+| --- | ------------------------- | ---- | --------- |
+| 6   | Select default game ROM   | KI1  | KI2       |
+| 7   | Wait for input on POST    | Wait | Continue  |
 
 ## To do
 
