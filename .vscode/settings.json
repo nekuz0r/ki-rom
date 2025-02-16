@@ -1,0 +1,12 @@
+{
+    "C_Cpp.default.cStandard": "gnu23",
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c",
+        "*.cpp": "cpp"
+    },
+    "editor.insertSpaces": true,
+    "editor.trimAutoWhitespace": true,
+    "editor.tabSize": 4,
+    "files.insertFinalNewline": true,
+}

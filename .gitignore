@@ -1,4 +1,8 @@
 .DS_Store
+.env
+build
+output
+font.h
 gal
 pcb-reverse
 docs/Exide - Reversing midway arcade audio with DeDCS.mp4
