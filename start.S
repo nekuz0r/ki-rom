@@ -245,7 +245,7 @@ _main:
     li a2,_data_size
 
     # Clear bss segment
-    la a0,_sbss_lma
+    la a0,_sbss_vma
     or a1,zero,zero
     jal memset
     li a2,_bss_size
