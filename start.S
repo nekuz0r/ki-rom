@@ -41,6 +41,8 @@ _other_exception_handler:
 
 _exception_handler:
     .set macro
+    li v0,0x0
+    mtc0 v0,CP0_COUNT
     la k0,view_main
     j _reset
     nop
@@ -189,8 +191,8 @@ init_cpu:
     mtc0 v0,CP0_WIRED
     li v0,0x0
     mtc0 v0,CP0_BAD_V_ADDR
-    li v0,0x0
-    mtc0 v0,CP0_COUNT
+    #li v0,0x0
+    #mtc0 v0,CP0_COUNT
     li v0,0x0
     mtc0 v0,CP0_ENTRY_HI
     li v0,-0x1
