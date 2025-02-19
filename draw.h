@@ -15,10 +15,12 @@ typedef struct
     uint32_t height;
 } image_t;
 
-void draw_point(register const uint16_t x, register const uint16_t y);
-void draw_horizontal_line(register uint16_t x, register uint16_t y, register uint16_t length, register uint16_t color);
-void draw_vertical_line(register uint16_t x, register uint16_t y, register uint16_t length);
-void draw_box(register const uint16_t x0, register const uint16_t y0, register const uint16_t x1, register const uint16_t y1);
-void draw_image(register const uint16_t x, register const uint16_t y, register const image_t *img);
+#define CHROMA_KEY_NONE (-1)
+
+void draw_point(const uint16_t x, const uint16_t y);
+void draw_horizontal_line(uint16_t x, uint16_t y, uint16_t length, uint16_t color);
+void draw_vertical_line(uint16_t x, uint16_t y, uint16_t length);
+void draw_box(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1);
+void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key);
 
 #endif

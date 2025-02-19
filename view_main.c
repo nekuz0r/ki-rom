@@ -79,7 +79,7 @@ static void render(const uint8_t frame_count)
         }
     }
 
-    draw_image(0x1E, 0x7, logo);
+    draw_image(0x1E, 0x7, logo, CHROMA_KEY_NONE);
     set_text_color(0x7FFF, 0xAAAA);
     print_xy(0x5A, 0x10, KI_ROM_VERSION_STR " (" KI_BOARD_STR ")");
     print_xy(0x5A, 0x10 + 0xa, "Bootrom v2.0.0 (" __DATE__ ")");
