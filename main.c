@@ -39,7 +39,7 @@ static void render_debug(uint32_t render_time)
 {
         video_init();
         sound_init();
-        ide_init();
+        // ide_init();
         time_init();
         srand(ticks());
 
