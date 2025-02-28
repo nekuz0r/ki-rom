@@ -6,6 +6,18 @@
 .set noat
 
 .align 8
+.globl lzss_decompressed_size
+lzss_decompressed_size:
+    lbu $t0,0x3($a0)
+    lbu $t1,0x2($a0)
+    sll $t0,0x8
+    or $t0,$t1
+    lbu $t1,1($a0)
+    sll $t0,0x8
+    jr $ra
+    or $v0,$t0,$t1
+
+.align 8
 .globl lzss_decompress
 lzss_decompress: 
     lbu $t0,0x3($a0)

@@ -250,6 +250,18 @@ _main:
     jal memset
     li a2,_bss_size
 
+    # Clear heap segment
+    la a0,_heap_vma
+    or a1,zero,zero
+    jal memset
+    li a2,_heap_size
+
+    # Setup heap allocator
+    la a0,_heap_vma
+    jal umm_init_heap
+    li a1,_heap_size
+
+    # fill screen green
     la a0,0x03e003e0
     or a1,zero,a0
     dsll32 a0,a0,0

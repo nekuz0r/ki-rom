@@ -10,14 +10,14 @@ KI_VARIANT = $(shell echo $(ROM) | cut -d'-' -f1 | tr '[:lower:]' '[:upper:]')
 
 ASM_SOURCES = start.S lzss.S images.S roms.S
 ASM_OBJS = $(ASM_SOURCES:%.S=build/${BOARD}-${ROM}-%.o)
-C_SOURCES = $(wildcard *.c)
+C_SOURCES = $(wildcard *.c libs/umm_malloc/*.c)
 C_OBJS = $(C_SOURCES:%.c=build/${BOARD}-${ROM}-%.o)
 DEPS = $(C_OBJS:.o=.d)
 
 .PHONY: rom
 rom: tools images gamerom ${ASM_OBJS} ${C_OBJS}
 	mkdir -p output
-	$(LD) -Tboot.ld -G 8 -o output/${BOARD}-${ROM}.u98 ${ASM_OBJS} ${C_OBJS}
+	$(LD) -Tboot.ld -G 0 -o output/${BOARD}-${ROM}.u98 ${ASM_OBJS} ${C_OBJS}
 	$(OBJDUMP) -D output/${BOARD}-${ROM}.u98 -b binary -mmips -M hex > output/${BOARD}-${ROM}.txt
 
 build/${BOARD}-${ROM}-%.o: %.S
@@ -25,7 +25,7 @@ build/${BOARD}-${ROM}-%.o: %.S
 
 build/${BOARD}-${ROM}-%.o: %.c
 	mkdir -p $(@D)
-	$(CC) -MMD -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} -DHDD_2IN1
+	$(CC) -MMD -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} -DHDD_2IN1 -DROM_2IN1
 # -mstrict-align
 
 .PHONY: clean

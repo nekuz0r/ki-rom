@@ -7,6 +7,7 @@
 #ifndef _LZSS_H_
 #define _LZSS_H_
 
+uint32_t lzss_decompressed_size(const void *src);
 void *lzss_decompress(register const void *src, register void *dst);
 
 #endif

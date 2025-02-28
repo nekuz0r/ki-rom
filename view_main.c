@@ -147,8 +147,8 @@ static void load(void)
 }
 static void unload(void)
 {
+    free(logo);
     logo = nullptr;
-    zasset_clear();
 }
 
 view_t view_main = {

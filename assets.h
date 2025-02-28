@@ -43,7 +43,6 @@ extern uint8_t *zasset_ki1_characters[];
 extern uint8_t *zasset_ki2_characters[];
 
 void *zasset_load(const void *ptr);
-void zasset_clear(void);
 void zrom_load(void);
 
 #endif

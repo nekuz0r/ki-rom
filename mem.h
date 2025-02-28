@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <umm_malloc/umm_malloc.h>
 
 inline uint16_t __attribute__((always_inline)) swap_uint16(uint16_t val)
 {
@@ -63,5 +64,25 @@ inline uint8_t __attribute__((always_inline)) is_aligned(register const void *co
 
 void *memcpy(void *dst, const void *src, size_t size);
 void *memset(void *dst, uint64_t value, size_t count);
+
+inline void *__attribute__((always_inline)) malloc(size_t size)
+{
+    return umm_malloc(size);
+}
+
+inline void __attribute__((always_inline)) free(void *ptr)
+{
+    return umm_free(ptr);
+}
+
+inline void *__attribute__((always_inline)) calloc(size_t num, size_t size)
+{
+    return umm_calloc(num, size);
+}
+
+inline void *__attribute__((always_inline)) realloc(void *ptr, size_t size)
+{
+    return umm_realloc(ptr, size);
+}
 
 #endif

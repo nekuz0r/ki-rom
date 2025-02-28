@@ -1,9 +1,11 @@
 {
     "C_Cpp.default.cStandard": "gnu23",
+    "C_Cpp.autoAddFileAssociations": false,
     "files.associations": {
         "*.h": "c",
         "*.c": "c",
-        "*.cpp": "cpp"
+        "*.cpp": "cpp",
+        "*.hpp": "cpp"
     },
     "editor.insertSpaces": true,
     "editor.trimAutoWhitespace": true,
