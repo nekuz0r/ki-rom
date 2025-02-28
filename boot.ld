@@ -14,7 +14,7 @@ SECTIONS {
         *(.assets);
     } > rom AT > rom
 
-    .data ORIGIN(sram) : ALIGN(8) {
+    .data ORIGIN(sram) + 0x200 : ALIGN(8) {
         _sdata = .;
         *(.sdata);
         *(.data);
@@ -24,7 +24,7 @@ SECTIONS {
         _edata = .;
     } > sram AT > rom
 
-    .bss ORIGIN(sram) + SIZEOF(.data) (NOLOAD) : ALIGN(8) {
+    .bss ORIGIN(sram) + 0x200 + SIZEOF(.data) (NOLOAD) : ALIGN(8) {
         _sbss = .;
         *(.sbss);
         *(.bss);
@@ -32,9 +32,10 @@ SECTIONS {
         _ebss = .;
     } > sram
 
-    # In this configuration the stack and heap do grow in opposide direction and tower each other
-    .heap ORIGIN(sram) + SIZEOF(.data) + SIZEOF(.bss) (NOLOAD) : ALIGN(8) {
-        gAssetBuffer = .; # Heap # Base address for the heap (growing up)
+    # In this configuration the stack and heap do grow in opposide direction and away of each other
+    .heap ORIGIN(sram) + 0x4000 (NOLOAD) : ALIGN(8) {
+        _heap_vma = .; # Base address for the heap (growing up)
+        . += 0x3000;
     } > sram
 
     .stack ORIGIN(sram) (NOLOAD) : ALIGN(8) {
@@ -55,6 +56,7 @@ SECTIONS {
     PROVIDE(_data_size = SIZEOF(.data));
     PROVIDE(_sbss_vma = ADDR(.bss));
     PROVIDE(_bss_size = SIZEOF(.bss));
+    PROVIDE(_heap_size = SIZEOF(.heap));
 
     PROVIDE(gIO = 0xB0000080);
     PROVIDE(gIDE = 0xB0000100);

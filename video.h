@@ -14,6 +14,7 @@
 #define FRAME_BUFFER_VISIBLE_SIZE 0x12C00
 
 extern uint16_t *gBackBuffer;
+extern uint64_t frame_counter;
 
 void video_init(void);
 void video_clear_vrams(void);

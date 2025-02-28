@@ -10,6 +10,7 @@
 extern uint16_t gVramBank0[FRAME_BUFFER_SIZE];
 extern uint16_t gVramBank1[FRAME_BUFFER_SIZE];
 uint16_t *gBackBuffer = gVramBank1;
+uint64_t frame_counter = 0;
 
 void video_init(void)
 {
@@ -66,4 +67,6 @@ void video_vsync_wait(void)
         asm volatile("mfc0 %0,$13"
                      : "=r"(cause));
     } while ((cause & 0x400) == 0);
+
+    frame_counter++;
 }

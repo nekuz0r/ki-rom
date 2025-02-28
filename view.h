@@ -15,7 +15,7 @@
 
 typedef struct
 {
-  void (*render)(const uint8_t frame_count);
+  void (*render)(const uint64_t frame_count);
   void (*load)(void);
   void (*unload)(void);
 } view_t;

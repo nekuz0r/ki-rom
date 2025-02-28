@@ -56,28 +56,9 @@ static void print_status_line(const char *description, bool status)
     print_str(description);
 }
 
-static void render(const uint8_t frame_count)
+static void render(const uint64_t frame_count)
 {
     video_clear_framebuffer(0x0);
-
-    static uint8_t dir = 1;
-    static uint8_t color = 0x1F;
-    if ((frame_count % 3) == 0)
-    {
-        if (dir == 0)
-        {
-            color++;
-        }
-        else
-        {
-            color--;
-        }
-
-        if (color >= 0x1F || color <= 0)
-        {
-            dir = !dir;
-        }
-    }
 
     draw_image(0x1E, 0x7, logo, CHROMA_KEY_NONE);
     set_text_color(0x7FFF, 0xAAAA);
@@ -113,7 +94,7 @@ static void render(const uint8_t frame_count)
         break;
     case ST_DONE:
         uint64_t elapsed_time = timer_elapsed_time(&start_timer);
-        set_text_color(color, 0xAAAA);
+        set_text_color(color_fade_in_out(0x1F, 0x0, FADE_SPEED_2S), 0xAAAA);
         print_xy(0x1F, 0x48 + (patch_index * 0xC) + 0xC, "Press any buttons (");
         print_dec(ceil((30000 - elapsed_time) / 1000.0f));
         print_str("s).");

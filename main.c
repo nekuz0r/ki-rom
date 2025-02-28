@@ -23,7 +23,7 @@ static void render_debug(uint32_t render_time)
         static uint32_t render_time_max = 0;
         render_time_max = MAX(render_time, render_time_max);
 
-        set_text_color(0x0000, 0x3E0);
+        set_text_color(0x0000, 0x7FF);
         draw_box(0, 208, 150, 231);
         set_text_color(0x0000, 0xAAAA);
         print_xy(2, 210, "renderTime = ");
@@ -37,8 +37,6 @@ static void render_debug(uint32_t render_time)
 
 [[noreturn]] void main(view_t *view)
 {
-        register uint8_t frame_count = 0;
-
         video_init();
         sound_init();
         ide_init();
@@ -54,15 +52,12 @@ static void render_debug(uint32_t render_time)
 #endif
                 wdt_reset();
 
-                view_current->render(frame_count);
+                view_current->render(frame_counter);
 
 #if defined(DEBUG)
                 render_time = clock() - render_time;
                 render_debug(render_time);
 #endif
-
-                frame_count++;
-                frame_count %= 60;
                 video_vsync_wait();
                 video_swap_buffers();
         }

@@ -9,6 +9,7 @@
 
 extern uint16_t _fgcolor;
 extern uint16_t _bgcolor;
+extern uint64_t frame_counter;
 
 void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key)
 {
@@ -188,4 +189,23 @@ void draw_box(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uin
             draw_horizontal_line(x0 + 1, y0 + line, x1 - x0 - 1, _bgcolor);
         }
     }
+}
+
+uint16_t color_fade_in_out(uint16_t from, uint16_t to, uint8_t speed)
+{
+    uint8_t ra = from & 0x1F;
+    uint8_t rb = to & 0x1F;
+    uint8_t ga = (from >> 5) & 0x1F;
+    uint8_t gb = (to >> 5) & 0x1F;
+    uint8_t ba = (from >> 10) & 0x1F;
+    uint8_t bb = (to >> 10) & 0x1F;
+
+    uint16_t res = (60 * speed);
+    float t = (float)(abs((frame_counter % res) - (res >> 1)) * 2) / (float)res;
+
+    uint8_t r = ra + (t * (rb - ra));
+    uint8_t g = ga + (t * (gb - ga));
+    uint8_t b = ba + (t * (bb - ba));
+
+    return r | (g << 5) | (b << 10);
 }
