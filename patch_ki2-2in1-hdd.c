@@ -88,31 +88,17 @@ static uint32_t disk_checksums[] = {
     0xd11c1ab8, 0x4c2b80f9, 0xc74775d9, 0x7aa78b52, 0xaa944375, 0x4ccb77ab, 0x0fea45c1, 0xf10eaaf2,
     0xf10eaaf2, 0xfb03d90f, 0x0681ded7, 0xcc218659, 0x38ebcc0a, 0xdadab479, 0x523e279e, 0xe7ce0120};
 
-DETOUR_GATEWAY(entry);
-DETOUR_GATEWAY(exit);
+static void (*org_ide_seek)(const uint64_t a0, const uint64_t lba, const uint64_t a2, const uint8_t count) = (void *)ide_seek_addr;
 
-[[maybe_unused]] DETOUR_FN static void ide_seek_entry(void)
+[[maybe_unused]] DETOUR_FN static void ide_seek_hooked(const uint64_t a0, const uint64_t lba, const uint64_t a2, const uint8_t count)
 {
-    asm volatile("or $k0,$0,$a1\n"    // Save a1 register (restored on exit)
-                 "la $v0,%[offset]\n" // Offset LBA address
-                 "addu $a1,$a1,$v0\n"
-                 : : [offset] "i"(0x0003E809));
-    DETOUR_RETURN(entry, v0);
+    return org_ide_seek(a0, lba + 0x0003E809, a2, count);
 }
-
-[[maybe_unused]] DETOUR_FN static void ide_seek_exit(void)
-{
-    asm volatile("or $a1,$0,$k0\n"); // Restore a1 register
-    DETOUR_RETURN(exit, k0);
-}
+DETOUR_GATEWAY(ide_seek, ide_seek_hooked);
 
 [[maybe_unused]] static void apply(void)
 {
-    //*(uint8_t *)(ide_init_addr + 0x14) = 0x40;
-    //*(uint8_t *)(ide_seek_addr + 0x14) = 0x40;
-
-    DETOUR(entry, ide_seek_addr, &ide_seek_entry);
-    DETOUR(exit, ide_seek_addr + 0x60, &ide_seek_exit);
+    org_ide_seek = DETOUR(ide_seek, org_ide_seek);
 
     /**
      * KI2 HDD checksumed data starts at sector 0x14 (0x14 * 0x200 = 0x2800 bytes)

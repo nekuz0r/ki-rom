@@ -43,12 +43,14 @@ _exception_handler:
     .set macro
     li v0,0x0
     mtc0 v0,CP0_COUNT
-    la k0,view_main
+    la a0,view_main
     j _reset
     nop
 
 .globl _reset
 _reset:
+    or k0,a0,zero
+
     jal init_cpu
     nop
     jal video_init
@@ -270,7 +272,7 @@ _main:
 
     jal video_swap_buffers
     nop
-    
+
     # jump to main function
     or a0,zero,k0
     j main

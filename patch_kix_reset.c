@@ -8,6 +8,10 @@
 #include "view.h"
 #include "mem.h"
 #include "detour.h"
+#include "sound.h"
+#include "cache.h"
+
+extern void _reset(view_t *view) __attribute__((far));
 
 #if defined(KI_L15DI)
 static constexpr uintptr_t hook_target_addr = 0x880266dc;
@@ -27,36 +31,40 @@ static constexpr uintptr_t hook_target_addr = 0x88023a3c;
 static constexpr uintptr_t hook_target_addr = 0x880238d0;
 #endif
 
-DETOUR_GATEWAY(reset);
+static void (*org_interrupt_handler)(void) = (void *)0x88023b04;
 
-[[maybe_unused]] DETOUR_FN void reset_hook(void)
+DETOUR_FN static void interrupt_handler_hooked(void)
 {
-    asm volatile(
-        ".set noat\n"
-        ".set noreorder\n"
-        "la $a0,%[buttons]\n"
-        "lw $a0,0x0($a0)\n"
-        "andi $a0,$a0,0x444\n"
-        "bnez $a0,exit\n"
-        "nop\n"
-        "la $a0,%[sound_reset]\n"
-        "li $a1,0x0\n"
-        "sb $a1,0x0($a0)\n"
-        "la $k0,%[view]\n"
-        "lui $k1,0x2000\n"
-        "la $ra,_reset\n"
-        "or $ra,$ra,$k1\n" // Make sure we jump back to uncached memory
-        "jr $ra\n"
-        "or $k1,$k1,$0\n"
-        "exit:\n" : : [buttons] "i"(&gIO.player1), [sound_reset] "i"(&gIO.soundReset), [view] "i"(&view_main));
+    if ((gIO.player1 & 0x444) != 0)
+    {
+        return;
+    }
 
-    DETOUR_RETURN(reset, a0);
+    gIO.soundReset = 0;
+
+    uint32_t addr = 0x80000000;
+    do
+    {
+        CACHE_OP(INDEX_WRITEBACK_INVALIDATE_D, addr, 0x0000);
+        CACHE_OP(INDEX_WRITEBACK_INVALIDATE_D, addr, 0x2000);
+        addr += 32;
+    } while (addr != 0x80002000);
+    SYNC();
+
+    _reset(
+#if defined(ROM_2IN1)
+        &view_bootselect
+#else
+        &view_main
+#endif
+    );
 }
+DETOUR_INT_GATEWAY(interrupt_handler, interrupt_handler_hooked);
 
 [[maybe_unused]] static void apply(void)
 {
 #if defined(KI_L15D) || defined(KI_L15DI) || defined(KI_L14) || defined(KI_L13) || defined(KI2_L14) || defined(KI2_L13) || defined(KI2_L13K) || defined(KI2_L14K) || defined(KI2_L11) || defined(KI2_L10)
-    DETOUR(reset, hook_target_addr, &reset_hook);
+    DETOUR(interrupt_handler, org_interrupt_handler);
 #endif
 }
 
