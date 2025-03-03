@@ -17,7 +17,7 @@ zasset_\img: .incbin "build/assets/images/\img\.zbin"
 .inczimg ki1_jago
 .inczimg ki1_orchid
 .inczimg ki1_riptor
-.inczimg ki1_sabrewolf
+.inczimg ki1_sabrewulf
 .inczimg ki1_spinal
 .inczimg ki1_thunder
 .inczimg ki2_combo
@@ -31,3 +31,5 @@ zasset_\img: .incbin "build/assets/images/\img\.zbin"
 .inczimg ki2_sabrewulf
 .inczimg ki2_spinal
 .inczimg ki2_tusk
+.inczimg rare_logo
+.inczimg nintendo_logo

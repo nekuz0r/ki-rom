@@ -38,6 +38,8 @@ extern uint8_t zasset_ki2_orchid[];
 extern uint8_t zasset_ki2_sabrewulf[];
 extern uint8_t zasset_ki2_spinal[];
 extern uint8_t zasset_ki2_tusk[];
+extern uint8_t zasset_rare_logo[];
+extern uint8_t zasset_nintendo_logo[];
 
 extern uint8_t *zasset_ki1_characters[];
 extern uint8_t *zasset_ki2_characters[];

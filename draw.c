@@ -11,23 +11,10 @@ extern uint16_t _fgcolor;
 extern uint16_t _bgcolor;
 extern uint64_t frame_counter;
 
-void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key)
+static void _draw_image(const uint16_t x, const uint16_t y, const uint32_t width, const uint32_t height, const void *ptr, uint16_t chroma_key)
 {
-    const uint32_t width = img->width;
-    const uint32_t height = img->height;
-    const void *ptr = (void *)img + 8;
     uint64_t block = 0x0;
     uint64_t mask = 0;
-
-    //  uint16_t *image = (uint16_t *)ptr;
-    // for ( uint32_t cy = 0; cy < height; cy++)
-    // {
-    //     for ( uint32_t cx = 0; cx < width; cx++)
-    //     {
-    //          uint16_t *pixel = video_get_ptr(x + cx, y + cy);
-    //         *pixel = *image++;
-    //     }
-    // }
 
     for (uint32_t cy = 0; cy < height; cy++)
     {
@@ -39,15 +26,14 @@ void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t
             uint32_t offset = alignedPtr - ptr;
             uint32_t pixelOffset = offset >> 1;
             block = 0;
-            mask = 0;
+            mask = 0xFFFFFFFFFFFFFFFFull << (pixelOffset << 4);
 
             // Create a video block with those
             for (uint32_t px = 0; px < pixelOffset; px++)
             {
                 uint16_t pixelColor = *(uint16_t *)ptr;
                 block |= ((uint64_t)(pixelColor)) << (px << 4);
-                mask |= ((uint16_t)(pixelColor != chroma_key) - 1) << (px << 4);
-
+                mask |= ((uint64_t)((pixelColor != chroma_key) - 1) & 0xFFFF) << (px << 4);
                 ptr += 2;
             }
             video_write_block(x + cx, y + cy, block, mask);
@@ -79,17 +65,49 @@ void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t
         if (width - cx > 0)
         {
             block = 0x0;
-            mask = 0;
+            mask = 0xFFFFFFFFFFFFFFFFull << ((width - cx) << 4);
             for (uint32_t px = 0; px < width - cx; px++)
             {
                 uint16_t pixelColor = *(uint16_t *)ptr;
                 block |= ((uint64_t)(pixelColor)) << (px << 4);
-                mask |= ((uint16_t)(pixelColor != chroma_key) - 1) << (px << 4);
+                mask |= ((uint64_t)((pixelColor != chroma_key) - 1) & 0xFFFF) << (px << 4);
                 ptr += 2;
             }
             video_write_block(x + cx, y + cy, block, mask);
         }
     }
+}
+
+void draw_animation(const uint16_t x, const uint16_t y, const animated_image_t *img, uint16_t chroma_key)
+{
+    const uint32_t width = img->width;
+    const uint32_t height = img->height;
+    const uint32_t frames = img->frames;
+    const void *ptr = (void *)img + sizeof(animated_image_t);
+
+    const uint32_t frame = ((float)(frame_counter % (6 * frames)) / (float)(6 * frames)) * frames;
+    ptr += (frame * height * width * 2);
+
+    _draw_image(x, y, width, height, ptr, chroma_key);
+}
+
+void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key)
+{
+    const uint32_t width = img->width;
+    const uint32_t height = img->height;
+    const void *ptr = (void *)img + sizeof(image_t);
+
+    //  uint16_t *image = (uint16_t *)ptr;
+    // for ( uint32_t cy = 0; cy < height; cy++)
+    // {
+    //     for ( uint32_t cx = 0; cx < width; cx++)
+    //     {
+    //          uint16_t *pixel = video_get_ptr(x + cx, y + cy);
+    //         *pixel = *image++;
+    //     }
+    // }
+
+    _draw_image(x, y, width, height, ptr, chroma_key);
 }
 
 void draw_point(const uint16_t x, const uint16_t y)

@@ -43,7 +43,7 @@ inline void __attribute__((always_inline)) video_write_block(register const uint
     if (ptr == alignedPtr)
     {
         *ptr &= mask;
-        *ptr |= block;
+        *ptr |= (block & ~mask);
         return;
     }
 
@@ -59,10 +59,10 @@ inline void __attribute__((always_inline)) video_write_block(register const uint
     block_mask_carry |= 0xFFFFFFFFFFFFFFFFull << offset;
 
     *alignedPtr &= mask;
-    *alignedPtr |= block;
+    *alignedPtr |= (block & ~mask);
     alignedPtr += 1;
     *alignedPtr &= block_mask_carry;
-    *alignedPtr |= block_carry;
+    *alignedPtr |= (block_carry & ~block_mask_carry);
 }
 
 #endif

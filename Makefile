@@ -32,7 +32,7 @@ build/${BOARD}-${ROM}-%.o: %.c
 clean:
 	-rm -rf build
 	-rm -rf tools/**/build
-	-rm -f tools/lzss/lzss tools/png2bin/png2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
+	-rm -f tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
 
 ROM_BIN = build/roms/${ROM}-0.bin build/roms/${ROM}-1.bin build/roms/${ROM}-2.bin
 ROM_ADDR = $(ROM_BIN:.bin=.addr)
@@ -56,8 +56,9 @@ build/roms/${ROM}-%.zbin: build/roms/${ROM}-%.bin
 	tools/lzss/lzss -ewo $@
 
 IMAGES_PNG = $(wildcard assets/images/*.png)
-IMAGES_BIN = $(IMAGES_PNG:%.png=build/%.bin)
-IMAGES_ZBIN = $(IMAGES_PNG:%.png=build/%.zbin)
+IMAGES_GIF = $(wildcard assets/images/*.gif)
+IMAGES_BIN = $(IMAGES_PNG:%.png=build/%.bin) $(IMAGES_GIF:%.gif=build/%.bin)
+IMAGES_ZBIN = $(IMAGES_PNG:%.png=build/%.zbin) $(IMAGES_GIF:%.gif=build/%.zbin)
 
 .PHONY: images
 images: ${IMAGES_ZBIN}
@@ -66,18 +67,25 @@ build/assets/images/%.bin: assets/images/%.png
 	mkdir -p $(@D)
 	tools/png2bin/png2bin $< build/
 
+build/assets/images/%.bin: assets/images/%.gif
+	mkdir -p $(@D)
+	tools/gif2bin/gif2bin $< build/
+
 build/assets/images/%.zbin: build/assets/images/%.bin
 	cp $< $@
 	tools/lzss/lzss -ewo $@
 
 .PHONY: tools
-tools: tools/lzss/lzss tools/png2bin/png2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
+tools: tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
 
 tools/lzss/lzss:
 	cd tools/lzss && make
 
 tools/png2bin/png2bin:
 	cd tools/png2bin && make
+
+tools/gif2bin/gif2bin:
+	cd tools/gif2bin && make
 
 tools/rom-unpack/rom-unpack:
 	cd tools/rom-unpack && make

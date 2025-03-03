@@ -14,13 +14,13 @@
 
 int main(int argc, const char **argv)
 {
-    if (argc < 1)
+    if (argc < 2)
     {
         return EXIT_FAILURE;
     }
 
     const char *input_file = argv[1];
-    const char *output_dir = argc >= 2 ? argv[2] : "";
+    const char *output_dir = argc >= 3 ? argv[2] : "";
 
     FILE *fp = fopen(input_file, "rb");
     if (!fp)
@@ -108,9 +108,9 @@ int main(int argc, const char **argv)
     {
         for (uint32_t j = 0; j < width * 3; j += 3)
         {
-            uint8_t r = (rows[i][j] * 31) >> bit_depth;
-            uint8_t g = (rows[i][j + 1] * 31) >> bit_depth;
-            uint8_t b = (rows[i][j + 2] * 31) >> bit_depth;
+            uint8_t r = (rows[i][j] << 5) >> bit_depth;
+            uint8_t g = (rows[i][j + 1] << 5) >> bit_depth;
+            uint8_t b = (rows[i][j + 2] << 5) >> bit_depth;
 
             uint16_t c = ((b & 0x1F) << 10) | ((g & 0x1F) << 5) | (r & 0x1F);
 
