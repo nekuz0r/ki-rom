@@ -243,25 +243,27 @@ _main:
     # Copy data segment to ram
     la a0,_sdata_vma
     la a1,_sdata_lma
+    la a2,_data_size
     jal memcpy
-    li a2,_data_size
+    nop
 
     # Clear bss segment
     la a0,_sbss_vma
-    or a1,zero,zero
+    la a2,_bss_size
     jal memset
-    li a2,_bss_size
+    or a1,zero,zero
 
     # Clear heap segment
     la a0,_heap_vma
-    or a1,zero,zero
+    la a2,_heap_size
     jal memset
-    li a2,_heap_size
+    or a1,zero,zero
 
     # Setup heap allocator
     la a0,_heap_vma
+    la a1,_heap_size
     jal umm_init_heap
-    li a1,_heap_size
+    nop
 
     # fill screen green
     la a0,0x03e003e0

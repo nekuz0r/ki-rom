@@ -35,7 +35,7 @@ SECTIONS {
     # In this configuration the stack and heap do grow in opposide direction and away of each other
     .heap ORIGIN(sram) + 0x4000 (NOLOAD) : ALIGN(8) {
         _heap_vma = .; # Base address for the heap (growing up)
-        . += 0x3000;
+        . += 0x10000;
     } > sram
 
     .stack ORIGIN(sram) (NOLOAD) : ALIGN(8) {
