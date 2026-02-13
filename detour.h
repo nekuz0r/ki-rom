@@ -17,17 +17,20 @@
 #define DETOUR_INLINE_GATEWAY(name) \
     __attribute__((section(".detour.gateway"))) static uint32_t name##_gateway[4] = {0};
 
+// Function detour stack store 0x1000 bytes belows the detour
+// interrupt stack pointer as the interrupt could happend anytime
+// corrupting the stack if happening inside a detour
 #define DETOUR_GATEWAY(name, dst)                \
     DETOUR_INLINE_GATEWAY(name)                  \
     DETOUR_FN static void name##_jump_gate(void) \
     {                                            \
         asm volatile(                            \
-            ".set noat\n"                        \
             ".set noreorder\n"                   \
             "addiu $sp,$sp,-8\n"                 \
             "sd $ra,0($sp)\n"                    \
             "lui $ra,%%hi(_stack_vma)\n"         \
             "addiu $ra,%%lo(_stack_vma)\n"       \
+            "addiu $ra,$ra,-0x1000\n"            \
             "sd $sp,-8($ra)\n"                   \
             "addiu $sp,$ra,-8\n"                 \
             "jal detour_save_registers\n"        \

@@ -10,7 +10,6 @@
 #include <stdint.h>
 
 void sound_set_volume(uint8_t level);
-void sound_reset_soft(void);
 void sound_play(uint16_t track);
 void sound_init(void);
 
