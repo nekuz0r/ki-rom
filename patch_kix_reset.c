@@ -14,9 +14,9 @@
 extern void _reset(view_t *view) __attribute__((far));
 
 #if defined(KI_L15DI)
-static constexpr uintptr_t hook_target_addr = 0x880266dc;
+static constexpr uintptr_t hook_target_addr = 0x880265b8 + 0x8;
 #elif defined(KI_L15D)
-static constexpr uintptr_t hook_target_addr = 0x880267ec;
+static constexpr uintptr_t hook_target_addr = 0x880266c8 + 0x8;
 #elif defined(KI_L14)
 static constexpr uintptr_t hook_target_addr = 0x880264ac;
 #elif defined(KI_L13)
@@ -31,7 +31,7 @@ static constexpr uintptr_t hook_target_addr = 0x88023a3c;
 static constexpr uintptr_t hook_target_addr = 0x880238d0;
 #endif
 
-static void (*org_interrupt_handler)(void) = (void *)0x88023b04;
+static void (*org_interrupt_handler)(void) = (void *)hook_target_addr;
 
 DETOUR_FN static void interrupt_handler_hooked(void)
 {

@@ -7,8 +7,10 @@
 #include <stdint.h>
 #include "mem.h"
 
-void *memcpy(void *dst, const void *src, size_t size)
+void *memcpy(uint8_t *dst, const uint8_t *src, size_t size)
 {
+    void *odst = dst;
+
     if (is_aligned(dst, sizeof(uint64_t)) && is_aligned(src, sizeof(uint64_t)))
     {
         while (size >= sizeof(uint64_t))
@@ -44,14 +46,18 @@ void *memcpy(void *dst, const void *src, size_t size)
 
     while (size > 0)
     {
-        *(char *)dst++ = *(char *)src++;
+        *(uint8_t *)dst++ = *(uint8_t *)src++;
         size--;
     }
-    return dst;
+
+    return odst;
 }
 
-void *memset(void *dst, uint64_t value, size_t count)
+void *memset(uint8_t *dst, uint64_t value, size_t count)
 {
+    void *odst = dst;
+    value = (value & 0xFF) * 0x0101010101010101ULL;
+
     if (is_aligned(dst, sizeof(uint64_t)))
     {
         while (count >= sizeof(uint64_t))
@@ -85,8 +91,9 @@ void *memset(void *dst, uint64_t value, size_t count)
     // Set remaining bytes
     while (count > 0)
     {
-        *(char *)dst++ = value;
+        *(uint8_t *)dst++ = value;
         count -= sizeof(char);
     }
-    return dst;
+
+    return odst;
 }

@@ -27,6 +27,8 @@ static enum State {
 } state = ST_ROM_LOAD;
 
 static image_t *logo = nullptr;
+static animated_image_t *rare_logo = nullptr;
+static animated_image_t *nintendo_logo = nullptr;
 static uint8_t patch_index = 0;
 static timer_t start_timer;
 
@@ -60,7 +62,12 @@ static void render(const uint64_t frame_count)
 {
     video_clear_framebuffer(0x0);
 
-    draw_image(0x1E, 0x7, logo, CHROMA_KEY_NONE);
+    if (logo)
+        draw_image(0x1E, 0x7, logo, CHROMA_KEY_NONE);
+    if (rare_logo)
+        draw_animation(260, 200, rare_logo, 0x7C1F);
+    if (nintendo_logo)
+        draw_animation(90, 200, nintendo_logo, 0x7C1F);
     set_text_color(0x7FFF, 0xAAAA);
     print_xy(0x5A, 0x10, KI_ROM_VERSION_STR " (" KI_BOARD_STR ")");
     print_xy(0x5A, 0x10 + 0xa, "Bootrom v2.0.0 (" __DATE__ ")");
@@ -96,7 +103,13 @@ static void render(const uint64_t frame_count)
         uint64_t elapsed_time = timer_elapsed_time(&start_timer);
         set_text_color(color_fade_in_out(0x1F, 0x0, FADE_SPEED_2S), 0xAAAA);
         print_xy(0x1F, 0x48 + (patch_index * 0xC) + 0xC, "Press any buttons (");
-        print_dec(ceil((30000 - elapsed_time) / 1000.0f));
+        // print_dec(ceil((30000 - elapsed_time) / 1000.0f));
+        int32_t remaining = 30000 - (int32_t)elapsed_time;
+        if (remaining < 0)
+        {
+            remaining = 0;
+        }
+        print_dec((remaining + 999) / 1000);
         print_str("s).");
 
         if (elapsed_time >= 30000 || is_any_input_pressed() || (gIO.dipSwitch & 0x80) == 0)
@@ -125,11 +138,20 @@ static void load(void)
     }
 
     logo = zasset_load(zasset_logo);
+    rare_logo = zasset_load(zasset_rare_logo);
+    nintendo_logo = zasset_load(zasset_nintendo_logo);
 }
 static void unload(void)
 {
-    free(logo);
+    if (logo)
+        free(logo);
+    if (rare_logo)
+        free(rare_logo);
+    if (nintendo_logo)
+        free(nintendo_logo);
     logo = nullptr;
+    rare_logo = nullptr;
+    nintendo_logo = nullptr;
 }
 
 view_t view_main = {

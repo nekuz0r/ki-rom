@@ -22,14 +22,21 @@
     DETOUR_FN static void name##_jump_gate(void) \
     {                                            \
         asm volatile(                            \
+            ".set noat\n"                        \
+            ".set noreorder\n"                   \
             "addiu $sp,$sp,-8\n"                 \
             "sd $ra,0($sp)\n"                    \
+            "lui $ra,%%hi(_stack_vma)\n"         \
+            "addiu $ra,%%lo(_stack_vma)\n"       \
+            "sd $sp,-8($ra)\n"                   \
+            "addiu $sp,$ra,-8\n"                 \
             "jal detour_save_registers\n"        \
             "nop\n"                              \
             "jal %[hooked]\n"                    \
             "nop\n"                              \
             "jal detour_load_registers\n"        \
             "nop\n"                              \
+            "ld $sp,0($sp)\n"                    \
             "ld $ra,0($sp)\n"                    \
             "addiu $sp,$sp,8\n"                  \
             : : [hooked] "i"(&dst));             \
@@ -43,12 +50,17 @@
             ".set noreorder\n"                                       \
             "addiu $sp,$sp,-8\n"                                     \
             "sd $ra,0($sp)\n"                                        \
+            "lui $ra,%%hi(_stack_vma)\n"                             \
+            "addiu $ra,%%lo(_stack_vma)\n"                           \
+            "sd $sp,-8($ra)\n"                                       \
+            "addiu $sp,$ra,-8\n"                                     \
             "jal detour_save_registers\n"                            \
             "nop\n"                                                  \
             "jal %[hooked]\n"                                        \
             "nop\n"                                                  \
             "jal detour_load_registers\n"                            \
             "nop\n"                                                  \
+            "ld $sp,0($sp)\n"                                        \
             "ld $ra,0($sp)\n"                                        \
             "addiu $sp,$sp,8\n"                                      \
             "j %[gateway]\n"                                         \
@@ -59,7 +71,7 @@
 #define DETOUR_INLINE(name, src, dst) detour(name##_gateway, (void *)(src), (void *)(dst))
 #define DETOUR(name, src) detour(name##_gateway, (void *)(src), name##_jump_gate)
 
-#define DETOUR_RETURN(name, reg)                                       \
+#define DETOUR_RETURN(name)                                            \
     asm volatile("j %[gateway]\n" : : [gateway] "i"(&name##_gateway)); \
     asm volatile("nop\n")
 

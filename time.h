@@ -10,9 +10,9 @@
 #include <stdint.h>
 
 void time_init(void);
-const uint64_t ticks(void);
-const uint64_t clock(void);
-const uint64_t millis(void);
-const uint64_t micros(void);
+uint64_t ticks(void);
+uint64_t clock(void);
+uint64_t millis(void);
+uint64_t micros(void);
 
 #endif

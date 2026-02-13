@@ -74,15 +74,17 @@ void ide_read_sector_bytes(uint16_t *ptr)
     } while (ptr != end);
 }
 
-void ide_read_sectors(uint32_t lba, uint32_t count, void *buf)
+void ide_read_sectors(uint32_t lba, uint32_t count, uint8_t *buf)
 {
-    if (count <= 0)
+    if (count == 0)
     {
         return;
     }
 
-    // Only 255 sectors can be requested at a time
+    // Only 256 sectors can be requested at a time
     uint16_t sector_count = count & 0xff;
+    if (sector_count == 0)
+        sector_count = 0x100;
     do
     {
         wdt_reset();
@@ -95,7 +97,7 @@ void ide_read_sectors(uint32_t lba, uint32_t count, void *buf)
         do
         {
             ide_ack();
-            ide_read_sector_bytes(buf);
+            ide_read_sector_bytes((uint16_t *)buf);
             buf += 0x200;
             lba++;
             sector_count--;
@@ -113,15 +115,17 @@ void ide_write_sector_bytes(uint16_t *ptr)
     } while (ptr != end);
 }
 
-void ide_write_sectors(uint32_t lba, uint32_t count, void *buf)
+void ide_write_sectors(uint32_t lba, uint32_t count, uint8_t *buf)
 {
-    if (count <= 0)
+    if (count == 0)
     {
         return;
     }
 
-    // Only 255 sectors can be requested at a time
+    // Only 256 sectors can be requested at a time
     uint16_t sector_count = count & 0xff;
+    if (sector_count == 0)
+        sector_count = 0x100;
     do
     {
         wdt_reset();
@@ -133,7 +137,7 @@ void ide_write_sectors(uint32_t lba, uint32_t count, void *buf)
         // write sectors
         do
         {
-            ide_write_sector_bytes(buf);
+            ide_write_sector_bytes((uint16_t *)buf);
             ide_ack();
             buf += 0x200;
             lba++;

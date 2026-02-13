@@ -23,7 +23,8 @@ __attribute__((const)) long long int llabs(long long int x)
 __attribute__((const)) float ceil(float value)
 {
     int integer_value = value;
-    if ((float)integer_value != value)
-        return value + 1;
-    return value;
+    float float_value = (float)integer_value;
+    if (float_value < value)
+        return float_value + 1;
+    return float_value;
 }

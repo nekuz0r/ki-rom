@@ -59,7 +59,7 @@ extern volatile ide_command_registers_t gIDE;
 extern volatile ide_control_registers_t gIDEControl;
 
 uint8_t ide_init(void);
-void ide_read_sectors(uint32_t lba, uint32_t count, void *buf);
-void ide_write_sectors(uint32_t lba, uint32_t count, void *buf);
+void ide_read_sectors(uint32_t lba, uint32_t count, uint8_t *buf);
+void ide_write_sectors(uint32_t lba, uint32_t count, uint8_t *buf);
 
 #endif

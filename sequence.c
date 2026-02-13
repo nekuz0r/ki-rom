@@ -7,7 +7,7 @@
 #include "io.h"
 #include "time.h"
 
-uint16_t sequence_konami_code[] = {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, BTN_UP, BTN_UP, BTN_DOWN, BTN_DOWN, BTN_LEFT, BTN_RIGHT, BTN_LEFT, BTN_RIGHT, BTN_QP, BTN_QK, 0xFFFF};
+uint16_t sequence_konami_code[] = {0x0000, 0xDEAD, 0xDEAD, 0xDEAD, 0x0000, 0x0000, 0x0000, 0x0000, BTN_UP, BTN_UP, BTN_DOWN, BTN_DOWN, BTN_LEFT, BTN_RIGHT, BTN_LEFT, BTN_RIGHT, BTN_QP, BTN_QK, 0xFFFF};
 
 bool check_sequence(uint16_t *const sequence, const uint16_t timeout)
 {
@@ -16,7 +16,7 @@ bool check_sequence(uint16_t *const sequence, const uint16_t timeout)
     uint64_t now = millis();
 
     uint16_t *index = sequence;
-    uint64_t *time = (uint64_t *)(sequence + 1);
+    uint64_t *time = (uint64_t *)(sequence + 4);
     uint16_t *inputs = sequence + 5;
 
     if (*time != 0 && (now - *time) >= timeout)

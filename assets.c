@@ -42,7 +42,10 @@ uint8_t *zasset_ki2_characters[] = {
 void *zasset_load(const void *ptr)
 {
     void *out = malloc(lzss_decompressed_size(ptr));
-    lzss_decompress(ptr, out);
+    if (out != NULL)
+    {
+        lzss_decompress(ptr, out);
+    }
     return out;
 }
 

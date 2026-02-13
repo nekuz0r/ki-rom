@@ -131,7 +131,7 @@ void print_dec(register int64_t val)
 
 static inline void __attribute__((always_inline)) print_hex_char(register uint8_t val)
 {
-    val &= 0x1f;
+    val &= 0x0f;
     if (val >= 10)
     {
         val += 0x7;

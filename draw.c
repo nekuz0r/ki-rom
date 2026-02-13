@@ -11,7 +11,8 @@ extern uint16_t _fgcolor;
 extern uint16_t _bgcolor;
 extern uint64_t frame_counter;
 
-static void _draw_image(const uint16_t x, const uint16_t y, const uint32_t width, const uint32_t height, const void *ptr, uint16_t chroma_key)
+#ifdef DRAW_IMAGE_OPTIMIZED
+static void _draw_image(const uint16_t x, const uint16_t y, const uint32_t width, const uint32_t height, const uint8_t *ptr, uint16_t chroma_key)
 {
     uint64_t block = 0x0;
     uint64_t mask = 0;
@@ -19,7 +20,7 @@ static void _draw_image(const uint16_t x, const uint16_t y, const uint32_t width
     for (uint32_t cy = 0; cy < height; cy++)
     {
         uint32_t cx = 0;
-        const void *const alignedPtr = align_up(ptr, 8);
+        const uint8_t *const alignedPtr = align_up(ptr, 8);
         if (ptr != alignedPtr)
         {
             // How much pixel to reach alignment ?
@@ -77,37 +78,86 @@ static void _draw_image(const uint16_t x, const uint16_t y, const uint32_t width
         }
     }
 }
+#endif
 
 void draw_animation(const uint16_t x, const uint16_t y, const animated_image_t *img, uint16_t chroma_key)
 {
     const uint32_t width = img->width;
     const uint32_t height = img->height;
     const uint32_t frames = img->frames;
-    const void *ptr = (void *)img + sizeof(animated_image_t);
+    const uint8_t *ptr = (uint8_t *)img + sizeof(animated_image_t);
 
-    const uint32_t frame = ((float)(frame_counter % (6 * frames)) / (float)(6 * frames)) * frames;
+    const uint32_t frame = (frame_counter % (6 * frames)) / 6;
+
     ptr += (frame * height * width * 2);
 
+#ifdef DRAW_IMAGE_OPTIMIZED
     _draw_image(x, y, width, height, ptr, chroma_key);
+#else
+    uint16_t *image = (uint16_t *)ptr;
+    for (uint32_t cy = 0; cy < height; cy++)
+    {
+        for (uint32_t cx = 0; cx < width; cx++)
+        {
+            if (*image != chroma_key)
+            {
+                uint16_t *pixel = video_get_ptr(x + cx, y + cy);
+                *pixel = *image;
+            }
+            image++;
+        }
+    }
+#endif
+}
+
+void draw_image_mirror_x(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key)
+{
+    const uint32_t width = img->width;
+    const uint32_t height = img->height;
+    const uint8_t *ptr = (uint8_t *)img + sizeof(image_t);
+    uint16_t *image = (uint16_t *)ptr;
+
+    for (uint32_t cy = 0; cy < height; cy++)
+    {
+        uint16_t *pixel = video_get_ptr(x, y + cy);
+        image += width;
+        uint16_t *src = image - 1;
+        for (uint32_t cx = 0; cx < width - 1; cx++)
+        {
+            if (*src != chroma_key)
+            {
+                *pixel = *src;
+            }
+            src--;
+            pixel++;
+        }
+    }
 }
 
 void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key)
 {
     const uint32_t width = img->width;
     const uint32_t height = img->height;
-    const void *ptr = (void *)img + sizeof(image_t);
+    const uint8_t *ptr = (uint8_t *)img + sizeof(image_t);
 
-    //  uint16_t *image = (uint16_t *)ptr;
-    // for ( uint32_t cy = 0; cy < height; cy++)
-    // {
-    //     for ( uint32_t cx = 0; cx < width; cx++)
-    //     {
-    //          uint16_t *pixel = video_get_ptr(x + cx, y + cy);
-    //         *pixel = *image++;
-    //     }
-    // }
-
+#ifdef DRAW_IMAGE_OPTIMIZED
     _draw_image(x, y, width, height, ptr, chroma_key);
+#else
+    uint16_t *image = (uint16_t *)ptr;
+    for (uint32_t cy = 0; cy < height; cy++)
+    {
+        uint16_t *pixel = video_get_ptr(x, y + cy);
+        for (uint32_t cx = 0; cx < width; cx++)
+        {
+            if (*image != chroma_key)
+            {
+                *pixel = *image;
+            }
+            image++;
+            pixel++;
+        }
+    }
+#endif
 }
 
 void draw_point(const uint16_t x, const uint16_t y)
@@ -148,6 +198,16 @@ void draw_horizontal_line(uint16_t x, uint16_t y, uint16_t length, uint16_t colo
 void draw_vertical_line(uint16_t x, uint16_t y, uint16_t length)
 {
     uint16_t *ptr = video_get_ptr(x, y);
+    while (length >= 4)
+    {
+        ptr[0] = _fgcolor;
+        ptr[320] = _fgcolor;
+        ptr[640] = _fgcolor;
+        ptr[960] = _fgcolor;
+        ptr += 1280;
+        length -= 4;
+    }
+
     while (length > 0)
     {
         *ptr = _fgcolor;
@@ -218,12 +278,20 @@ uint16_t color_fade_in_out(uint16_t from, uint16_t to, uint8_t speed)
     uint8_t ba = (from >> 10) & 0x1F;
     uint8_t bb = (to >> 10) & 0x1F;
 
-    uint16_t res = (60 * speed);
-    float t = (float)(abs((frame_counter % res) - (res >> 1)) * 2) / (float)res;
+    uint32_t res = (60 * speed);
+    uint32_t pos = frame_counter % res;
+    uint32_t half = res >> 1;
+    uint32_t dist = (pos < half) ? (half - pos) : (pos - half);
+    uint32_t t_fixed = (dist * 512) / res;
 
-    uint8_t r = ra + (t * (rb - ra));
-    uint8_t g = ga + (t * (gb - ga));
-    uint8_t b = ba + (t * (bb - ba));
+    if (t_fixed > 255)
+    {
+        t_fixed = 255;
+    }
+
+    uint8_t r = ra + ((t_fixed * (int16_t)(rb - ra)) >> 8);
+    uint8_t g = ga + ((t_fixed * (int16_t)(gb - ga)) >> 8);
+    uint8_t b = ba + ((t_fixed * (int16_t)(bb - ba)) >> 8);
 
     return r | (g << 5) | (b << 10);
 }
