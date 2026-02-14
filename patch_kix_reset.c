@@ -14,24 +14,24 @@
 extern void _reset(view_t *view) __attribute__((far));
 
 #if defined(KI_L15DI)
-static constexpr uintptr_t hook_target_addr = 0x880265b8 + 0x8;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x880265b8 + 0x8;
 #elif defined(KI_L15D)
-static constexpr uintptr_t hook_target_addr = 0x880266c8 + 0x8;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x880266c8 + 0x8;
 #elif defined(KI_L14)
-static constexpr uintptr_t hook_target_addr = 0x880264ac;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x88026388 + 0x8;
 #elif defined(KI_L13)
-static constexpr uintptr_t hook_target_addr = 0x8802649c;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x88026378 + 0x8;
 #elif defined(KI2_L14) || defined(KI2_L13) || defined(KI2_L13K)
-static constexpr uintptr_t hook_target_addr = 0x88023b9c;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x88023a78 + 0x8;
 #elif defined(KI2_L14K)
-static constexpr uintptr_t hook_target_addr = 0x88023b6c;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x88023a48 + 0x8;
 #elif defined(KI2_L11)
-static constexpr uintptr_t hook_target_addr = 0x88023a3c;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x88023918 + 0x8;
 #elif defined(KI2_L10)
-static constexpr uintptr_t hook_target_addr = 0x880238d0;
+static constexpr uintptr_t general_interrupt_handler_addr = 0x880237ac + 0x8;
 #endif
 
-static void (*org_interrupt_handler)(void) = (void *)hook_target_addr;
+static void (*org_interrupt_handler)(void) = (void *)general_interrupt_handler_addr;
 
 DETOUR_FN static void interrupt_handler_hooked(void)
 {

@@ -10,10 +10,11 @@
 
 static void sound_reset(void)
 {
+    interrupts_disable();
     gIO.soundReset = 0;
     udelay(400);
     gIO.soundReset = 1;
-    delay(80);
+    udelay(80000);
     gIO.soundData = 1;
     interrupts_enable();
 }
@@ -39,7 +40,7 @@ static void sound_write_byte(uint8_t data)
     udelay(8);
 }
 
-static void sound_command(uint16_t cmd)
+static void sound_volume_command(uint16_t cmd)
 {
     interrupts_disable();
     uint32_t data = ((uint32_t)cmd << 16) | 0x55AA;
@@ -53,17 +54,20 @@ static void sound_command(uint16_t cmd)
         }
 
         udelay(8);
+        sound_write_byte((uint8_t)((data >> 8) & 0xFF));
+
+        if (!sound_wait_ready())
+        {
+            sound_reset();
+            return;
+        }
+
+        udelay(8);
         sound_write_byte((uint8_t)(data & 0xFF));
-        data >>= 8;
+        data >>= 16;
     } while (data != 0);
 
     interrupts_enable();
-}
-
-void sound_write_short(uint16_t data)
-{
-    sound_write_byte(data >> 8);
-    sound_write_byte(data & 0xff);
 }
 
 void sound_play(uint16_t track)
@@ -91,12 +95,13 @@ void sound_play(uint16_t track)
 
 void sound_set_volume(uint8_t level)
 {
-    sound_command((level << 8) | ~level);
+    sound_volume_command((level << 8) | ~level);
 }
 
 void sound_init(void)
 {
-    sound_reset();
-    sound_set_volume(0xff);
-    sound_play(0);
+    sound_reset();          // Reset DCS
+    sound_write_byte(0x00); // Send a byte to force boot, skip self-test
+    udelay(100000);         // Wait a least 100ms
+    sound_set_volume(0xFF); // Set volume to max
 }
