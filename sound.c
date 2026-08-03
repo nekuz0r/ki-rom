@@ -95,7 +95,7 @@ void sound_play(uint16_t track)
 
 void sound_set_volume(uint8_t level)
 {
-    sound_volume_command((level << 8) | ~level);
+    sound_volume_command(((uint16_t)level << 8) | (uint8_t)~level);
 }
 
 void sound_init(void)
