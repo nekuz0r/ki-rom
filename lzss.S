@@ -5,7 +5,7 @@
 .set nomacro
 .set noat
 
-.align 8
+.align 2
 .globl lzss_decompressed_size
 lzss_decompressed_size:
     lbu $t0,0x3($a0)
@@ -17,7 +17,7 @@ lzss_decompressed_size:
     jr $ra
     or $v0,$t0,$t1
 
-.align 8
+.align 2
 .globl lzss_decompress
 lzss_decompress: 
     lbu $t0,0x3($a0)

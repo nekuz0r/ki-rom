@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 .macro .inczimg img
-.align 8
+.align 2
 .globl zasset_\img
 zasset_\img: .incbin "build/assets/images/\img\.zbin"
 .endm
