@@ -33,6 +33,23 @@ zrom_2_data: .incbin XSTR(build/roms/ZROM-2.zbin)
 .align 8
 .globl rom_start
 rom_start:
+    # The game image was decompressed into cached DRAM (assets.c zrom_load) and
+    # then patched with ordinary stores, so the D-cache still holds dirty lines.
+    # The I-cache is filled from memory and is not coherent with the D-cache, so
+    # without this the CPU can execute the pre-patch instruction stream.
+    # Sweeps all 512 lines of both 16K 2-way caches by index, as start.S does.
+    lui $t0,0x8000
+    ori $t1,$zero,0x100
+1$:
+    cache 0x1,0x0($t0)          # Index_Writeback_Invalidate_D, way 0
+    cache 0x1,0x2000($t0)       # ... way 1
+    cache 0x0,0x0($t0)          # Index_Invalidate_I, way 0
+    cache 0x0,0x2000($t0)       # ... way 1
+    addiu $t1,$t1,-0x1
+    bnez $t1,1$
+    addiu $t0,$t0,0x20
+    sync
+
     lui $ra,0x8800
     dmtc1 $zero,$0
     dmtc1 $zero,$1
