@@ -53,20 +53,33 @@ void video_swap_buffers(void)
     }
 }
 
+/*
+ * Roughly four frames' worth of spinning. One frame is ~1.66M cycles at 100MHz
+ * and each iteration is ~4 cycles, so a frame is ~400k iterations.
+ */
+#define VSYNC_TIMEOUT (2000000)
+
 void video_vsync_wait(void)
 {
     register uint32_t cause;
-    do
-    {
-        asm volatile("mfc0 %0,$13"
-                     : "=r"(cause));
-    } while ((cause & 0x400) != 0);
+    uint32_t guard;
 
+    // Both waits are bounded: if IP2 never toggles (no sync signal, or a
+    // latched interrupt nothing acknowledges) the render loop keeps running
+    // free instead of spinning here forever with the watchdog unfed.
+    guard = VSYNC_TIMEOUT;
     do
     {
         asm volatile("mfc0 %0,$13"
                      : "=r"(cause));
-    } while ((cause & 0x400) == 0);
+    } while ((cause & 0x400) != 0 && --guard != 0);
+
+    guard = VSYNC_TIMEOUT;
+    do
+    {
+        asm volatile("mfc0 %0,$13"
+                     : "=r"(cause));
+    } while ((cause & 0x400) == 0 && --guard != 0);
 
     frame_counter++;
 }
