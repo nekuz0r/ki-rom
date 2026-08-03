@@ -103,5 +103,5 @@ void sound_init(void)
     sound_reset();          // Reset DCS
     sound_write_byte(0x00); // Send a byte to force boot, skip self-test
     udelay(100000);         // Wait a least 100ms
-    sound_set_volume(0xFF); // Set volume to max
+    sound_set_volume(0x80); // Set volume to max
 }

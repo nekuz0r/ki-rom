@@ -66,11 +66,11 @@ static void render(const uint64_t frame_count)
         draw_image(0x1E, 0x7, logo, CHROMA_KEY_NONE);
     if (rare_logo)
         draw_animation(260, 200, rare_logo, 0x7C1F);
-    if (nintendo_logo)
-        draw_animation(90, 200, nintendo_logo, 0x7C1F);
+    /*if (nintendo_logo)
+        draw_animation(90, 200, nintendo_logo, 0x7C1F);*/
     set_text_color(0x7FFF, 0xAAAA);
     print_xy(0x5A, 0x10, KI_ROM_VERSION_STR " (" KI_BOARD_STR ")");
-    print_xy(0x5A, 0x10 + 0xa, "Bootrom v2.0.0 (" __DATE__ ")");
+    print_xy(0x5A, 0x10 + 0xa, "Bootrom v2.0.1 (" __DATE__ ")");
     print_xy(0x5A, 0x10 + 0x14, "www.killer-instinct.net");
 
     set_text_color(0x7FFF, 0xAAAA);
@@ -139,7 +139,7 @@ static void load(void)
 
     logo = zasset_load(zasset_logo);
     rare_logo = zasset_load(zasset_rare_logo);
-    nintendo_logo = zasset_load(zasset_nintendo_logo);
+    // nintendo_logo = zasset_load(zasset_nintendo_logo);
 }
 static void unload(void)
 {
@@ -147,11 +147,11 @@ static void unload(void)
         free(logo);
     if (rare_logo)
         free(rare_logo);
-    if (nintendo_logo)
-        free(nintendo_logo);
+    /*if (nintendo_logo)
+        free(nintendo_logo);*/
     logo = nullptr;
     rare_logo = nullptr;
-    nintendo_logo = nullptr;
+    // nintendo_logo = nullptr;
 }
 
 view_t view_main = {

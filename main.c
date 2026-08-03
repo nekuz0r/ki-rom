@@ -15,7 +15,7 @@
 #include "ide.h"
 #include "math.h"
 
-#define DEBUG
+// #define DEBUG
 
 #if defined(DEBUG)
 static void render_debug(uint32_t render_time)

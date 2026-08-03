@@ -25,7 +25,8 @@ build/${BOARD}-${ROM}-%.o: %.S
 
 build/${BOARD}-${ROM}-%.o: %.c
 	mkdir -p $(@D)
-	$(CC) -MMD -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} -DHDD_2IN1 -DROM_2IN1
+	$(CC) -MMD -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} 
+#-DHDD_2IN1 -DROM_2IN1
 # -mstrict-align
 
 .PHONY: clean
