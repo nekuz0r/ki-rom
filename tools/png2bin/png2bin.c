@@ -72,6 +72,30 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
+    // The pixel loop below hard-codes 3 bytes per pixel and an 8-bit sample
+    // depth. png_set_palette_to_rgb() expands palette and low-bit-depth
+    // grayscale images, but a grayscale PNG still ends up with one channel
+    // (rowbytes == width), so reading 3*width bytes runs off the end of every
+    // row. RGBA silently reads 3 of every 4 bytes, and 16-bit samples make
+    // (v << 5) >> 16 always zero. Reject anything we do not actually handle.
+    if (color_type != PNG_COLOR_TYPE_RGB || bit_depth != 8)
+    {
+        fprintf(stderr, "Error: %s: expected 8-bit RGB (color_type=%d bit_depth=%d)\n",
+                input_file, color_type, bit_depth);
+        fclose(fp);
+        png_destroy_read_struct(&pngptr, &pnginfo, NULL);
+        return EXIT_FAILURE;
+    }
+
+    if (png_get_rowbytes(pngptr, pnginfo) < (size_t)width * 3)
+    {
+        fprintf(stderr, "Error: %s: row is %zu bytes, expected at least %zu\n",
+                input_file, png_get_rowbytes(pngptr, pnginfo), (size_t)width * 3);
+        fclose(fp);
+        png_destroy_read_struct(&pngptr, &pnginfo, NULL);
+        return EXIT_FAILURE;
+    }
+
     char *input_filename = strdup(input_file);
     if (input_filename == NULL)
     {
