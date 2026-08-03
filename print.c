@@ -45,22 +45,44 @@ void putchar_(register const char c)
     register uint64_t pixels = *(uint64_t *)&font[(c - 32) * 8];
     register uint16_t *ptr = video_get_ptr(_x, _y);
 
-    for (register uint8_t py = 0; py < 9; py++)
+    // ptr is a uint16_t* and _fgcolor/_bgcolor are uint16_t globals, so the
+    // compiler must assume a store through ptr can alias them and reload both
+    // after every pixel. Copy them into locals once. The transparency test is
+    // loop-invariant too, so split it out into two loop variants.
+    const uint16_t fgcolor = _fgcolor;
+    const uint16_t bgcolor = _bgcolor;
+
+    if (bgcolor == 0xAAAA)
     {
-        for (register uint8_t px = 0; px < 7; px++)
+        // Transparent background: only foreground pixels are written, so a
+        // blank glyph row costs nothing but the pointer step.
+        for (register uint8_t py = 0; py < 9; py++)
         {
-            if (pixels & 0x8000000000000000ULL)
+            for (register uint8_t px = 0; px < 7; px++)
             {
-                *ptr = _fgcolor;
+                if (pixels & 0x8000000000000000ULL)
+                {
+                    *ptr = fgcolor;
+                }
+                ptr++;
+                pixels <<= 1;
             }
-            else if (_bgcolor != 0xAAAA)
-            {
-                *ptr = _bgcolor;
-            }
-            ptr++;
-            pixels <<= 1;
+            ptr += 313;
         }
-        ptr += 313;
+    }
+    else
+    {
+        // Opaque background: every pixel is written either way.
+        for (register uint8_t py = 0; py < 9; py++)
+        {
+            for (register uint8_t px = 0; px < 7; px++)
+            {
+                *ptr = (pixels & 0x8000000000000000ULL) ? fgcolor : bgcolor;
+                ptr++;
+                pixels <<= 1;
+            }
+            ptr += 313;
+        }
     }
 
     _x += 6;
