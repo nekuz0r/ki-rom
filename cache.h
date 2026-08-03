@@ -2,8 +2,26 @@
 #ifndef _CACHE_H_
 #define _CACHE_H_
 
-#define CACHE_OP(op, base, offset) asm volatile("cache %0, %2(%1)" : : "i"(op), "r"(base), "i"(offset));
-#define SYNC() asm volatile("sync");
+/*
+ * Both of these need the "memory" clobber. Without it GCC assumes the asm
+ * does not touch memory and is free to move surrounding loads and stores
+ * across it -- volatile only stops the asm itself from being deleted or
+ * duplicated. A cache writeback that the compiler has sunk the stores past
+ * is a no-op.
+ *
+ * Wrapped in do/while(0) so they behave as single statements.
+ */
+#define CACHE_OP(op, base, offset)                                                            \
+    do                                                                                        \
+    {                                                                                         \
+        asm volatile("cache %0, %2(%1)" : : "i"(op), "r"(base), "i"(offset) : "memory");      \
+    } while (0)
+
+#define SYNC()                                \
+    do                                        \
+    {                                         \
+        asm volatile("sync" : : : "memory");  \
+    } while (0)
 
 #define ICACHE 0
 #define DCACHE 1
