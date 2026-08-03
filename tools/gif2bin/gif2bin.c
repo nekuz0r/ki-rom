@@ -17,8 +17,32 @@ int main(int argc, const char **argv)
 
     int error = 0;
     GifFileType *gif = DGifOpenFileName(input_file, &error);
+    if (gif == NULL)
+    {
+        fprintf(stderr, "Error: DGifOpenFileName(%s): %s\n", input_file, GifErrorString(error));
+        return EXIT_FAILURE;
+    }
 
-    error = DGifSlurp(gif);
+    if (DGifSlurp(gif) != GIF_OK)
+    {
+        fprintf(stderr, "Error: DGifSlurp(%s): %s\n", input_file, GifErrorString(gif->Error));
+        DGifCloseFile(gif, &error);
+        return EXIT_FAILURE;
+    }
+
+    if (gif->ImageCount < 1)
+    {
+        fprintf(stderr, "Error: %s contains no frames\n", input_file);
+        DGifCloseFile(gif, &error);
+        return EXIT_FAILURE;
+    }
+
+    if (gif->SColorMap == NULL)
+    {
+        fprintf(stderr, "Error: %s has no global color map (local maps are not supported)\n", input_file);
+        DGifCloseFile(gif, &error);
+        return EXIT_FAILURE;
+    }
 
     printf("%d\n", gif->ImageCount);
     printf("%d\n", gif->SColorResolution);
@@ -54,6 +78,24 @@ int main(int argc, const char **argv)
     uint32_t height = gif->SavedImages[0].ImageDesc.Height;
     uint64_t imageCount = gif->ImageCount;
 
+    // The runtime format is a flat array of full-canvas frames, so every frame
+    // has to match frame 0. giflib sizes RasterBits per frame from that frame's
+    // own ImageDesc, and optimizing encoders emit sub-rectangle frames -- using
+    // frame 0's dimensions to index them reads past the allocation.
+    for (int i = 0; i < gif->ImageCount; i++)
+    {
+        const GifImageDesc *d = &gif->SavedImages[i].ImageDesc;
+        if ((uint32_t)d->Width != width || (uint32_t)d->Height != height)
+        {
+            fprintf(stderr, "Error: %s frame %d is %dx%d, expected %ux%u "
+                            "(re-export without frame optimisation)\n",
+                    input_file, i, d->Width, d->Height, width, height);
+            fclose(ofp);
+            DGifCloseFile(gif, &error);
+            return EXIT_FAILURE;
+        }
+    }
+
     fwrite(&width, sizeof(uint32_t), 1, ofp);
     fwrite(&height, sizeof(uint32_t), 1, ofp);
     fwrite(&imageCount, sizeof(uint64_t), 1, ofp);
@@ -65,7 +107,7 @@ int main(int argc, const char **argv)
     printf("%x %x %x\n", gif->SColorMap->Colors[1].Red, gif->SColorMap->Colors[1].Green, gif->SColorMap->Colors[1].Blue);
     printf("%x %x %x\n", gif->SColorMap->Colors[2].Red, gif->SColorMap->Colors[2].Green, gif->SColorMap->Colors[2].Blue);
     printf("%x %x %x\n", gif->SColorMap->Colors[3].Red, gif->SColorMap->Colors[3].Green, gif->SColorMap->Colors[3].Blue);
-    for (uint8_t i = 0; i < gif->ImageCount; i++)
+    for (int i = 0; i < gif->ImageCount; i++)
     {
         SavedImage *p = &gif->SavedImages[i];
 
@@ -74,7 +116,7 @@ int main(int argc, const char **argv)
             int idx = p->RasterBits[j];
 
             uint16_t c = 0x7C1F;
-            if (idx != gif->SBackGroundColor)
+            if (idx != gif->SBackGroundColor && idx < gif->SColorMap->ColorCount)
             {
                 GifColorType rgb = gif->SColorMap->Colors[idx];
                 uint8_t r = rgb.Red >> 3;
