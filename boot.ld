@@ -38,10 +38,12 @@ SECTIONS {
         . += 0x10000;
     } > sram
 
-    .stack ORIGIN(sram) (NOLOAD) : ALIGN(8) {
-        . += 0x4000; # Put the stack at the edge of the 16K of cached memory
-        _stack_vma = .; # Base address for the stack (growing down)
-    } > sram
+    # The stack grows down from the top of the first 16K of cached SRAM towards
+    # _ebss. This is deliberately a bare symbol rather than an output section:
+    # as a section it spanned 0x80000000-0x80004000 and therefore overlapped
+    # .data and .bss, which ld reports as a hard error under any non-binary
+    # output format. OUTPUT_FORMAT(binary) merely suppressed the diagnostic.
+    _stack_vma = ORIGIN(sram) + 0x4000; # Base address for the stack (growing down)
 
     .fill : {
         LONG(0x0);
@@ -63,6 +65,13 @@ SECTIONS {
     PROVIDE(gIDEControl = 0xB0000170);
     PROVIDE(gVramBank0 = 0x80030000);
     PROVIDE(gVramBank1 = 0x80058000);
+
+    # .data + .bss grow up from 0x80000200 into the region the stack grows down
+    # through, and nothing else bounds them. Reserve 8K: the detour gateway
+    # stacks sit at _stack_vma - 0x1000 and below (see detour.h).
+    ASSERT(_ebss <= _stack_vma - 0x2000, "ERROR: .data + .bss leave less than 8K for the stack")
+    ASSERT(_heap_vma + _heap_size <= 0x80030000, "ERROR: heap overruns VRAM bank 0")
+    ASSERT(SIZEOF(.text) + SIZEOF(.data) <= LENGTH(rom), "ERROR: image does not fit in ROM")
 
     /DISCARD/ : { 
         *(.reginfo)
