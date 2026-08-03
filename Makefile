@@ -21,11 +21,12 @@ rom: tools images gamerom ${ASM_OBJS} ${C_OBJS}
 	$(OBJDUMP) -D output/${BOARD}-${ROM}.u98 -b binary -mmips -M hex > output/${BOARD}-${ROM}.txt
 
 build/${BOARD}-${ROM}-%.o: %.S
+	mkdir -p $(@D)
 	$(CC) -mplt -G 0 -mno-abicalls -mabi=o64 -c -EL -march=r4600 $< -o $@ -I. -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM}
 
 build/${BOARD}-${ROM}-%.o: %.c
 	mkdir -p $(@D)
-	$(CC) -MMD -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} 
+	$(CC) -MMD -MP -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} 
 #-DHDD_2IN1 -DROM_2IN1
 # -mstrict-align
 
@@ -33,6 +34,7 @@ build/${BOARD}-${ROM}-%.o: %.c
 clean:
 	-rm -rf build
 	-rm -rf tools/**/build
+	-rm -f font.h
 	-rm -f tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
 
 ROM_BIN = build/roms/${ROM}-0.bin build/roms/${ROM}-1.bin build/roms/${ROM}-2.bin
@@ -79,26 +81,26 @@ build/assets/images/%.zbin: build/assets/images/%.bin
 .PHONY: tools
 tools: tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
 
-tools/lzss/lzss:
-	cd tools/lzss && make
+tools/lzss/lzss: $(wildcard tools/lzss/*.c tools/lzss/*.h) tools/lzss/Makefile
+	$(MAKE) -C tools/lzss
 
-tools/png2bin/png2bin:
-	cd tools/png2bin && make
+tools/png2bin/png2bin: $(wildcard tools/png2bin/*.c tools/png2bin/*.h) tools/png2bin/Makefile
+	$(MAKE) -C tools/png2bin
 
-tools/gif2bin/gif2bin:
-	cd tools/gif2bin && make
+tools/gif2bin/gif2bin: $(wildcard tools/gif2bin/*.c tools/gif2bin/*.h) tools/gif2bin/Makefile
+	$(MAKE) -C tools/gif2bin
 
 tools/rom-unpack/rom-unpack:
-	cd tools/rom-unpack && make
+	$(MAKE) -C tools/rom-unpack
 
-tools/fontgen/fontgen:
-	cd tools/fontgen && make
+tools/fontgen/fontgen: $(wildcard tools/fontgen/*.c tools/fontgen/*.h) tools/fontgen/Makefile
+	$(MAKE) -C tools/fontgen
 
-tools/disk-checksum/disk-checksum:
-	cd tools/disk-checksum && make
+tools/disk-checksum/disk-checksum: $(wildcard tools/disk-checksum/*.c tools/disk-checksum/*.h) tools/disk-checksum/Makefile
+	$(MAKE) -C tools/disk-checksum
 
 build/${BOARD}-${ROM}-print.o: font.h
-font.h:
+font.h: tools/fontgen/fontgen
 	tools/fontgen/fontgen > $@
 
 -include $(DEPS)
@@ -106,28 +108,29 @@ font.h:
 .PHONY: roms
 roms:
 # 19489 KI1
-	make rom BOARD=19489 ROM=ki-l13
-	make rom BOARD=19489 ROM=ki-l14
-	make rom BOARD=19489 ROM=ki-l15d
-	make rom BOARD=19489 ROM=ki-l15di
+	$(MAKE) rom BOARD=19489 ROM=ki-l13
+	$(MAKE) rom BOARD=19489 ROM=ki-l14
+	$(MAKE) rom BOARD=19489 ROM=ki-l15d
+	$(MAKE) rom BOARD=19489 ROM=ki-l15di
 # 19489 KI2
-	make rom BOARD=19489 ROM=ki2-l10
-	make rom BOARD=19489 ROM=ki2-l11
-	make rom BOARD=19489 ROM=ki2-l13k
-	make rom BOARD=19489 ROM=ki2-l14k
+	$(MAKE) rom BOARD=19489 ROM=ki2-l10
+	$(MAKE) rom BOARD=19489 ROM=ki2-l11
+	$(MAKE) rom BOARD=19489 ROM=ki2-l13k
+	$(MAKE) rom BOARD=19489 ROM=ki2-l14k
 # 20351 KI1
-	make rom BOARD=20351 ROM=ki-l13
-	make rom BOARD=20351 ROM=ki-l14
-	make rom BOARD=20351 ROM=ki-l15d
-	make rom BOARD=20351 ROM=ki-l15di
+	$(MAKE) rom BOARD=20351 ROM=ki-l13
+	$(MAKE) rom BOARD=20351 ROM=ki-l14
+	$(MAKE) rom BOARD=20351 ROM=ki-l15d
+	$(MAKE) rom BOARD=20351 ROM=ki-l15di
 # 20351 KI2
-	make rom BOARD=20351 ROM=ki2-l10
-	make rom BOARD=20351 ROM=ki2-l11
-	make rom BOARD=20351 ROM=ki2-l13
-	make rom BOARD=20351 ROM=ki2-l14
+	$(MAKE) rom BOARD=20351 ROM=ki2-l10
+	$(MAKE) rom BOARD=20351 ROM=ki2-l11
+	$(MAKE) rom BOARD=20351 ROM=ki2-l13
+	$(MAKE) rom BOARD=20351 ROM=ki2-l14
 
 .PHONY: hdd
 hdd:
+	mkdir -p output
 	cat assets/disks/ki1.hd.bin assets/disks/ki2.hd.bin > output/hdd.bin
 	truncate --size=340802560 output/hdd.bin
 
