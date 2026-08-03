@@ -35,7 +35,8 @@ lzss_decompress:
         addiu $a0,0x1
         ori $t2,$zero,0x80
         2$:
-            beq $a1,$t0,5$
+            sltu $t6,$a1,$t0
+            beqz $t6,5$
             and $t4,$t1,$t2
             beqz $t2,1$
             srl $t2,0x1
@@ -55,6 +56,14 @@ lzss_decompress:
             addu $t4,$a1
             srl $t3,0x4
             addiu $t3,0x3
+            # Clamp the match to the remaining destination space. Reaching here
+            # implies $a1 < $t0, so the clamped length is still at least 1 and
+            # the copy loop below stays a valid do-while.
+            subu $t6,$t0,$a1
+            sltu $t7,$t6,$t3
+            beqz $t7,4$
+            nop
+            or $t3,$zero,$t6
             4$:
                 lbu $t5,0x0($t4)
                 addiu $t4,0x1
