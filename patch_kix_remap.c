@@ -198,7 +198,15 @@ static constexpr uint8_t offset_count[] = {
         for (uint8_t j = 0; j < offset_count[i]; j++)
         {
             uint8_t *ptr = base + offsets[i][j];
-            *ptr = mapping[(*ptr - 0x80) >> 3];
+            const uint8_t value = *ptr;
+
+            // mapping[] holds 8 entries, so only 0x80..0xBF produce an in-range
+            // index. Anything below 0x80 would index negatively (0x00 -> -16)
+            // and anything from 0xC0 up would index past the end (0xFF -> 15).
+            if (value >= 0x80 && value < 0xC0)
+            {
+                *ptr = mapping[(value - 0x80) >> 3];
+            }
         }
     }
 }
