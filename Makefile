@@ -4,6 +4,13 @@ OBJDUMP = mipsel-linux-gnu-objdump
 BOARD = 19489
 ROM = ki-l15d
 
+# Without this, an interrupted or failing recipe leaves its half-written target
+# on disk. That is actively dangerous for the .zbin rules, which "cp" the raw
+# file into place before compressing it: a failed lzss leaves an uncompressed
+# file named .zbin, newer than its prerequisite, so the next make considers it
+# up to date and links raw pixel data into the ROM as if it were compressed.
+.DELETE_ON_ERROR:
+
 KI_BOARD = KI_BOARD_${BOARD}
 KI_ROM = $(shell echo $(ROM) | tr '[:lower:]' '[:upper:]' | tr '-' '_')
 KI_VARIANT = $(shell echo $(ROM) | cut -d'-' -f1 | tr '[:lower:]' '[:upper:]')

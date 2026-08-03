@@ -3,6 +3,8 @@ SRCS = $(wildcard *.c)
 OBJS = $(SRCS:%.c=build/%.o)
 DEPS = $(SRCS:%.c=build/%.d)
 
+.DELETE_ON_ERROR:
+
 lzss: $(OBJS)
 	$(GCC) -o lzss $^
 

@@ -3,6 +3,8 @@ SRCS = $(wildcard *.c)
 OBJS = $(SRCS:%.c=build/%.o)
 DEPS = $(SRCS:%.c=build/%.d)
 
+.DELETE_ON_ERROR:
+
 png2bin: $(OBJS)
 	$(GCC) -o png2bin $^ `libpng16-config --ldflags`
 
