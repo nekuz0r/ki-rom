@@ -49,6 +49,15 @@ _exception_handler:
 
 .globl _reset
 _reset:
+    .set macro
+
+    # Set up the global and stack pointers before anything below calls into
+    # compiled C. video_init and video_clear_vrams are C functions; they only
+    # happen to compile to leaves that store nothing, so on entry $sp is still
+    # whatever the reset left in the register.
+    la gp,_gp # Init Global pointer
+    la sp,_stack_vma # Init Stack pointer
+
     or k0,a0,zero
 
     jal init_cpu
