@@ -97,14 +97,15 @@ void draw_animation(const uint16_t x, const uint16_t y, const animated_image_t *
     uint16_t *image = (uint16_t *)ptr;
     for (uint32_t cy = 0; cy < height; cy++)
     {
+        uint16_t *pixel = video_get_ptr(x, y + cy);
         for (uint32_t cx = 0; cx < width; cx++)
         {
             if (*image != chroma_key)
             {
-                uint16_t *pixel = video_get_ptr(x + cx, y + cy);
                 *pixel = *image;
             }
             image++;
+            pixel++;
         }
     }
 #endif
