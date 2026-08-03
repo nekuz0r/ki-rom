@@ -122,7 +122,7 @@ void draw_image_mirror_x(const uint16_t x, const uint16_t y, const image_t *img,
         uint16_t *pixel = video_get_ptr(x, y + cy);
         image += width;
         uint16_t *src = image - 1;
-        for (uint32_t cx = 0; cx < width - 1; cx++)
+        for (uint32_t cx = 0; cx < width; cx++)
         {
             if (*src != chroma_key)
             {
