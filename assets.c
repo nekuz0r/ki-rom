@@ -20,7 +20,7 @@ uint8_t *zasset_ki1_characters[] = {
     zasset_ki1_jago,
     zasset_ki1_orchid,
     zasset_ki1_riptor,
-    zasset_ki1_sabrewolf,
+    zasset_ki1_sabrewulf,
     zasset_ki1_spinal,
     zasset_ki1_thunder,
 };

@@ -24,7 +24,7 @@ extern uint8_t zasset_ki1_glacius[];
 extern uint8_t zasset_ki1_jago[];
 extern uint8_t zasset_ki1_orchid[];
 extern uint8_t zasset_ki1_riptor[];
-extern uint8_t zasset_ki1_sabrewolf[];
+extern uint8_t zasset_ki1_sabrewulf[];
 extern uint8_t zasset_ki1_spinal[];
 extern uint8_t zasset_ki1_thunder[];
 extern uint8_t zasset_ki2_combo[];
