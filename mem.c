@@ -53,6 +53,34 @@ void *memcpy(uint8_t *dst, const uint8_t *src, size_t size)
     return odst;
 }
 
+void *memmove(uint8_t *dst, const uint8_t *src, size_t size)
+{
+    if (dst == src || size == 0)
+    {
+        return dst;
+    }
+
+    // Either disjoint, or dst below src: copying forwards is safe, so reuse
+    // memcpy and its wider accesses.
+    if (dst < src || dst >= src + size)
+    {
+        return memcpy(dst, src, size);
+    }
+
+    // Overlapping with dst above src: copy backwards so the source bytes are
+    // read before they are overwritten.
+    uint8_t *d = dst + size;
+    const uint8_t *s = src + size;
+
+    while (size > 0)
+    {
+        *--d = *--s;
+        size--;
+    }
+
+    return dst;
+}
+
 void *memset(uint8_t *dst, uint64_t value, size_t count)
 {
     void *odst = dst;

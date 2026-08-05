@@ -63,6 +63,7 @@ inline uint8_t __attribute__((always_inline)) is_aligned(register const void *co
 }
 
 void *memcpy(uint8_t *dst, const uint8_t *src, size_t size);
+void *memmove(uint8_t *dst, const uint8_t *src, size_t size);
 void *memset(uint8_t *dst, uint64_t value, size_t count);
 
 inline void *__attribute__((always_inline)) malloc(size_t size)
