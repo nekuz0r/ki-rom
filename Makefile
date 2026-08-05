@@ -42,7 +42,12 @@ ROM_ZBIN = $(ROM_BIN:.bin=.zbin)
 .PHONY: gamerom
 gamerom: ${ROM_ZBIN}
 
-build/roms/${ROM}-%.bin: assets/roms/${ROM}.u98
+# Grouped target (&:, GNU make >= 4.3): one invocation of rom-unpack produces
+# all six files. With a normal pattern rule make treats each output as its own
+# target, so `make -j` runs rom-unpack concurrently three times into the same
+# build/roms/rom-{0,1,2}.bin and the mv commands race -- silently producing
+# corrupt segments that are then compressed and linked into the ROM.
+${ROM_BIN} ${ROM_ADDR} &: assets/roms/${ROM}.u98
 	mkdir -p $(@D)
 	tools/rom-unpack/rom-unpack ./assets/roms/${ROM}.u98 ./build/roms
 	mv build/roms/rom-0.bin build/roms/${ROM}-0.bin
