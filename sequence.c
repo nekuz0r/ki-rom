@@ -15,9 +15,10 @@ bool check_sequence(uint16_t *const sequence, const uint16_t timeout)
     uint16_t p1Inputs = gIO.player1 & 0x7FF;
     uint64_t now = millis();
 
+    // Layout: [0] index, [1..3] padding, [4..7] 64-bit timestamp, [8..] inputs.
     uint16_t *index = sequence;
     uint64_t *time = (uint64_t *)(sequence + 4);
-    uint16_t *inputs = sequence + 5;
+    uint16_t *inputs = sequence + 8;
 
     if (*time != 0 && (now - *time) >= timeout)
     {
