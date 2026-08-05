@@ -3,10 +3,38 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+#include <stddef.h>
 #include "detour.h"
 #include "asm.h"
 #include "cache.h"
 #include "interrupts.h"
+
+/*
+ * Make freshly written instructions visible to the instruction fetcher.
+ *
+ * The R4600 primary caches are 32 bytes per line and the I-cache is filled
+ * from memory, not from the D-cache, so every line the write touched has to
+ * be written back from the D-cache and then invalidated in the I-cache. A
+ * write that starts near the end of a line spans two lines, so the range has
+ * to be rounded out to line boundaries in both directions.
+ */
+static void detour_sync_caches(void *addr, size_t size)
+{
+    const uintptr_t start = (uintptr_t)addr & ~(uintptr_t)(CACHE_LINE_SIZE - 1);
+    const uintptr_t end = ((uintptr_t)addr + size + CACHE_LINE_SIZE - 1) & ~(uintptr_t)(CACHE_LINE_SIZE - 1);
+
+    for (uintptr_t line = start; line < end; line += CACHE_LINE_SIZE)
+    {
+        CACHE_OP(HIT_WRITEBACK_INVALIDATE_D, line, 0);
+    }
+
+    SYNC();
+
+    for (uintptr_t line = start; line < end; line += CACHE_LINE_SIZE)
+    {
+        CACHE_OP(HIT_INVALIDATE_I, line, 0);
+    }
+}
 
 /*
  * CRITICAL: The detour function copies 2 instructions from src to gateway.
@@ -33,13 +61,8 @@ void *detour(uint32_t *gateway, uint32_t *src, void *dst)
 
     // Writeback D-cache for modified memory locations
     // Then invalidate I-cache so CPU fetches new instructions
-    CACHE_OP(HIT_WRITEBACK_INVALIDATE_D, gateway, 0);
-    CACHE_OP(HIT_WRITEBACK_INVALIDATE_D, gateway, 8); // gateway[2-3]
-    CACHE_OP(HIT_WRITEBACK_INVALIDATE_D, src, 0);
-
-    CACHE_OP(HIT_INVALIDATE_I, gateway, 0);
-    CACHE_OP(HIT_INVALIDATE_I, gateway, 8);
-    CACHE_OP(HIT_INVALIDATE_I, src, 0);
+    detour_sync_caches(gateway, 4 * sizeof(uint32_t));
+    detour_sync_caches(src, 2 * sizeof(uint32_t));
 
     SYNC();
     interrupts_enable();
