@@ -35,7 +35,7 @@
 #define CREATE_DIRTY_EXCLUSIVE_D ((3 << 2) | DCACHE)
 #define HIT_INVALIDATE_D ((4 << 2) | DCACHE)
 #define HIT_WRITEBACK_INVALIDATE_D ((5 << 2) | DCACHE)
-#define HIT_WRITEBACK_D ((7 << 2) | DCACHE)
+#define HIT_WRITEBACK_D ((6 << 2) | DCACHE)
 
 // Primary Instruction Cache Operations
 #define INDEX_INVALIDATE_I ((0 << 2) | ICACHE)
