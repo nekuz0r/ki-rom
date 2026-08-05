@@ -115,6 +115,13 @@ build/${BOARD}-${ROM}-print.o: font.h
 font.h: tools/fontgen/fontgen
 	tools/fontgen/fontgen > $@
 
+# cpp cannot see through .incbin, so -MMD does not cover the assets that
+# images.S and roms.S embed. Without these, editing a PNG regenerates its
+# .zbin but does not reassemble the object, and the ROM silently keeps the
+# previous artwork until `make clean`.
+build/${BOARD}-${ROM}-images.o: ${IMAGES_ZBIN}
+build/${BOARD}-${ROM}-roms.o: ${ROM_ZBIN} ${ROM_ADDR}
+
 -include $(DEPS)
 
 .PHONY: roms
