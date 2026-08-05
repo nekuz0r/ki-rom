@@ -6,7 +6,7 @@
 
 .section .rodata
 
-.align 2
+.balign 4
 .globl zroms
 zroms:
     .incbin XSTR(build/roms/ZROM-0.addr)
@@ -18,11 +18,11 @@ zroms:
 
 .section .assets
 
-.align 2
+.balign 4
 zrom_0_data: .incbin XSTR(build/roms/ZROM-0.zbin)
-.align 2
+.balign 4
 zrom_1_data: .incbin XSTR(build/roms/ZROM-1.zbin)
-.align 2
+.balign 4
 zrom_2_data: .incbin XSTR(build/roms/ZROM-2.zbin)
 
 .text
@@ -30,7 +30,7 @@ zrom_2_data: .incbin XSTR(build/roms/ZROM-2.zbin)
 .set noat
 .set noreorder
 .set nomacro
-.align 2
+.balign 4
 .globl rom_start
 rom_start:
     lui $ra,0x8800
