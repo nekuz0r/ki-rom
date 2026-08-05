@@ -255,8 +255,17 @@ void draw_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 
 void draw_box(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1)
 {
-    draw_horizontal_line(x0 + 1, y0, x1 - x0 - 1, _fgcolor);
-    draw_horizontal_line(x0 + 1, y1, x1 - x0 - 1, _fgcolor);
+    // A box needs a strictly positive extent. Without this guard the length
+    // expressions below are evaluated as int and then converted to the
+    // uint16_t length parameter, so x1 == x0 yields -1 -> 65535.
+    if (x1 <= x0 || y1 <= y0)
+    {
+        return;
+    }
+
+    // The horizontals span the full width so the four corners are drawn.
+    draw_horizontal_line(x0, y0, x1 - x0 + 1, _fgcolor);
+    draw_horizontal_line(x0, y1, x1 - x0 + 1, _fgcolor);
     draw_vertical_line(x0, y0 + 1, y1 - y0 - 1);
     draw_vertical_line(x1, y0 + 1, y1 - y0 - 1);
 
