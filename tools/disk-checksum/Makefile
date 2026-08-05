@@ -3,6 +3,8 @@ SRCS = $(wildcard *.c)
 OBJS = $(SRCS:%.c=build/%.o)
 DEPS = $(SRCS:%.c=build/%.d)
 
+.DELETE_ON_ERROR:
+
 disk-checksum: $(OBJS)
 	$(GCC) -o disk-checksum $^
 
