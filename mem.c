@@ -7,6 +7,22 @@
 #include <stdint.h>
 #include "mem.h"
 
+/*
+ * umm_malloc declares these two as extern variables and reads them from
+ * umm_multi_init(). Nothing in libs/umm_malloc defines them, so without a
+ * definition the linker silently resolves both to 0 -- OUTPUT_FORMAT(binary)
+ * suppresses the undefined-symbol error that would otherwise be raised.
+ *
+ * Defined here rather than by patching the vendored library. The values match
+ * what start.S already passes to umm_init_heap(), so umm_init() becomes a
+ * working equivalent rather than a trap.
+ */
+extern uint8_t _heap_vma[];
+extern uint8_t _heap_size[];
+
+void *UMM_MALLOC_CFG_HEAP_ADDR = _heap_vma;
+uint32_t UMM_MALLOC_CFG_HEAP_SIZE = (uint32_t)(uintptr_t)_heap_size;
+
 void *memcpy(uint8_t *dst, const uint8_t *src, size_t size)
 {
     void *odst = dst;
