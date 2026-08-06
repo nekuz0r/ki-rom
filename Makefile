@@ -1,6 +1,7 @@
 CC = mipsel-linux-gnu-gcc-14
 LD = mipsel-linux-gnu-ld
 OBJDUMP = mipsel-linux-gnu-objdump
+OBJCOPY = mipsel-linux-gnu-objcopy
 BOARD = 19489
 ROM = ki-l15d
 
@@ -24,7 +25,8 @@ DEPS = $(C_OBJS:.o=.d)
 .PHONY: rom
 rom: tools images gamerom ${ASM_OBJS} ${C_OBJS}
 	mkdir -p output
-	$(LD) -Tboot.ld -G 0 -o output/${BOARD}-${ROM}.u98 ${ASM_OBJS} ${C_OBJS}
+	$(LD) -Tboot.ld -G 0 --no-undefined -o build/${BOARD}-${ROM}.elf ${ASM_OBJS} ${C_OBJS}
+	$(OBJCOPY) -O binary build/${BOARD}-${ROM}.elf output/${BOARD}-${ROM}.u98
 	$(OBJDUMP) -D output/${BOARD}-${ROM}.u98 -b binary -mmips -M hex > output/${BOARD}-${ROM}.txt
 
 build/${BOARD}-${ROM}-%.o: %.S
