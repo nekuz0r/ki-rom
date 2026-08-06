@@ -1,4 +1,9 @@
-OUTPUT_FORMAT(binary)
+/*
+ * Deliberately NOT OUTPUT_FORMAT(binary). Under the binary format ld silently
+ * resolves undefined symbols to 0 and does not report overlapping sections --
+ * both of which this project has been bitten by. Linking as ELF keeps those
+ * diagnostics, and the Makefile converts the result with objcopy -O binary.
+ */
 
 ENTRY(_reset_exception_handler)
 
@@ -10,7 +15,11 @@ MEMORY {
 
 SECTIONS {
     .text : ALIGN(4) {
-        *(.text);
+        # .text.* matters: -Os enables -freorder-functions, so GCC emits
+        # .text.startup (main) and .text.unlikely. Matching only *(.text) left
+        # those as orphan sections, placed by ld's heuristic rather than by
+        # this script -- and orphan placement differs between output formats.
+        *(.text .text.*);
         *(.assets);
     } > rom AT > rom
 
