@@ -49,11 +49,26 @@ uint8_t ide_init(void)
     delay(10);                       // Datasheet says 5ms before exiting reset state
     gIDEControl.deviceControl = 0x8; // Disable reset (!SRST) & Interrupt enabled (!IEN)
 
-    ide_wait_ready();
+    // ide_wait_ready() and ide_ack() report a timeout as 0x100, which is
+    // outside the 8-bit status register. Masking that against status bits
+    // yields 0, i.e. "no error" -- so an absent or dead drive used to look
+    // healthy here. Check for it explicitly instead.
+    if ((ide_wait_ready() & 0x100) != 0)
+    {
+        return 0xFF; // Device never became ready
+    }
+
     gIDE.sectorCount = 0x28; // Number of sector per track
     gIDE.device = 0xd;       // Number of head - 1 per cylinder
     gIDE.command = 0x91;     // Initialize device parameters
-    return ide_ack() & 0x21; // Return DRDY and ERR bits
+
+    const uint16_t status = ide_ack();
+    if ((status & 0x100) != 0)
+    {
+        return 0xFF; // Device never raised the completion interrupt
+    }
+
+    return status & 0x21; // Return DF and ERR bits
 }
 
 void ide_seek(uint32_t lba, uint8_t count)
