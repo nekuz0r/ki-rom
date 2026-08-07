@@ -56,13 +56,27 @@ uint8_t ide_init(void)
     return ide_ack() & 0x21; // Return DRDY and ERR bits
 }
 
-void ide_seek(uint32_t lba, uint8_t count)
+bool ide_seek(uint32_t lba, uint8_t count)
 {
-    gIDE.sectorCount = count;                  // Sector count
-    gIDE.lbaLow = (lba % 0x28) + 1;            // Sector
-    gIDE.lbaMid = ((lba / 0x28) / 0xe) & 0xff; // Cylinder (LOW)
-    gIDE.lbaHigh = ((lba / 0x28) / 0xe) >> 8;  // Cylinder (HI)
-    gIDE.device = (lba / 0x28) % 0xe;          // Head
+    const uint32_t track = lba / 0x28;
+    const uint32_t cylinder = track / 0xe;
+
+    // lbaHigh is an 8-bit register, so the cylinder field tops out at 65535.
+    // With the geometry ide_init() programs (40 sectors/track, 14 heads) that
+    // is LBA 36,700,160, about 18.8GB. Beyond it the shift silently truncates
+    // and the transfer addresses the wrong data with no error reported.
+    if (cylinder > 0xFFFF)
+    {
+        return false;
+    }
+
+    gIDE.sectorCount = count;           // Sector count
+    gIDE.lbaLow = (lba % 0x28) + 1;     // Sector
+    gIDE.lbaMid = cylinder & 0xff;      // Cylinder (LOW)
+    gIDE.lbaHigh = cylinder >> 8;       // Cylinder (HI)
+    gIDE.device = 0xA0 | (track % 0xe); // Head, plus the ATA obsolete-but-required bits
+
+    return true;
 }
 
 void ide_read_sector_bytes(uint16_t *ptr)
@@ -90,7 +104,10 @@ void ide_read_sectors(uint32_t lba, uint32_t count, uint8_t *buf)
         wdt_reset();
         count -= sector_count;
         ide_wait_ready();
-        ide_seek(lba, sector_count & 0xff);
+        if (!ide_seek(lba, sector_count & 0xff))
+        {
+            return; // LBA is beyond what the CHS registers can address
+        }
         gIDE.command = 0x20; // Read sectors command
 
         // Read sectors
@@ -131,7 +148,10 @@ void ide_write_sectors(uint32_t lba, uint32_t count, uint8_t *buf)
         wdt_reset();
         count -= sector_count;
         ide_wait_ready();
-        ide_seek(lba, sector_count & 0xff);
+        if (!ide_seek(lba, sector_count & 0xff))
+        {
+            return; // LBA is beyond what the CHS registers can address
+        }
         gIDE.command = 0x31; // write sectors command
 
         // write sectors
