@@ -231,7 +231,16 @@ void LZS_Decode(char *filename) {
         len = raw_end - raw;
       }
       pos = (pos & 0xFFF) + 1;
-      while (len--) *raw++ = *(raw - pos);
+      if (raw - pos < raw_buffer) {
+        printf(", WARNING: back-reference before start of output!");
+        break;
+      }
+      /* Split: "*raw++ = *(raw - pos)" modifies and reads raw in one
+         expression with no sequence point between them (-Wsequence-point). */
+      while (len--) {
+        *raw = *(raw - pos);
+        raw++;
+      }
     }
   }
 
