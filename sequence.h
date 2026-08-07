@@ -11,6 +11,8 @@
 
 bool check_sequence(uint16_t *const sequence, const uint16_t timeout);
 
-extern uint16_t sequence_konami_code[];
+// Any table passed to check_sequence() must be 8-byte aligned: it accesses
+// sequence[4..7] as a uint64_t.
+extern _Alignas(8) uint16_t sequence_konami_code[];
 
 #endif
