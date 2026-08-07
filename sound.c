@@ -10,7 +10,7 @@
 
 static void sound_reset(void)
 {
-    const uint32_t irq = interrupts_save();
+    const uint32_t irq = interrupts_disable();
     gIO.soundReset = 0;
     udelay(400);
     gIO.soundReset = 1;
@@ -42,7 +42,7 @@ static void sound_write_byte(uint8_t data)
 
 static void sound_volume_command(uint16_t cmd)
 {
-    const uint32_t irq = interrupts_save();
+    const uint32_t irq = interrupts_disable();
     uint32_t data = ((uint32_t)cmd << 16) | 0x55AA;
 
     do
@@ -74,7 +74,7 @@ static void sound_volume_command(uint16_t cmd)
 
 void sound_play(uint16_t track)
 {
-    const uint32_t irq = interrupts_save();
+    const uint32_t irq = interrupts_disable();
 
     if (!sound_wait_ready())
     {

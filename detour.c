@@ -48,7 +48,7 @@ static void detour_sync_caches(void *addr, size_t size)
  */
 void *detour(uint32_t *gateway, uint32_t *src, void *dst)
 {
-    const uint32_t irq = interrupts_save();
+    const uint32_t irq = interrupts_disable();
     // Setup gateway
     gateway[0] = src[0]; // copy stolen instructions
     gateway[1] = src[1];
