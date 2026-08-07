@@ -10,13 +10,13 @@
 
 static void sound_reset(void)
 {
-    interrupts_disable();
+    const uint32_t irq = interrupts_disable();
     gIO.soundReset = 0;
     udelay(400);
     gIO.soundReset = 1;
     udelay(80000);
     gIO.soundData = 1;
-    interrupts_enable();
+    interrupts_restore(irq);
 }
 
 static uint8_t sound_wait_ready(void)
@@ -42,7 +42,7 @@ static void sound_write_byte(uint8_t data)
 
 static void sound_volume_command(uint16_t cmd)
 {
-    interrupts_disable();
+    const uint32_t irq = interrupts_disable();
     uint32_t data = ((uint32_t)cmd << 16) | 0x55AA;
 
     do
@@ -50,6 +50,7 @@ static void sound_volume_command(uint16_t cmd)
         if (!sound_wait_ready())
         {
             sound_reset();
+            interrupts_restore(irq);
             return;
         }
 
@@ -59,6 +60,7 @@ static void sound_volume_command(uint16_t cmd)
         if (!sound_wait_ready())
         {
             sound_reset();
+            interrupts_restore(irq);
             return;
         }
 
@@ -67,16 +69,17 @@ static void sound_volume_command(uint16_t cmd)
         data >>= 16;
     } while (data != 0);
 
-    interrupts_enable();
+    interrupts_restore(irq);
 }
 
 void sound_play(uint16_t track)
 {
-    interrupts_disable();
+    const uint32_t irq = interrupts_disable();
 
     if (!sound_wait_ready())
     {
         sound_reset();
+        interrupts_restore(irq);
         return;
     }
 
@@ -85,12 +88,13 @@ void sound_play(uint16_t track)
     if (!sound_wait_ready())
     {
         sound_reset();
+        interrupts_restore(irq);
         return;
     }
 
     udelay(8);
     sound_write_byte((uint8_t)(track & 0xFF));
-    interrupts_enable();
+    interrupts_restore(irq);
 }
 
 void sound_set_volume(uint8_t level)
