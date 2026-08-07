@@ -7,7 +7,14 @@
 #include "io.h"
 #include "time.h"
 
-uint16_t sequence_konami_code[] = {0x0000, 0xDEAD, 0xDEAD, 0xDEAD, 0x0000, 0x0000, 0x0000, 0x0000, BTN_UP, BTN_UP, BTN_DOWN, BTN_DOWN, BTN_LEFT, BTN_RIGHT, BTN_LEFT, BTN_RIGHT, BTN_QP, BTN_QK, 0xFFFF};
+// check_sequence() reads and writes sequence[4..7] through a uint64_t *, and
+// MIPS ld/sd raise an Address Error unless the address is 8-byte aligned.
+// uint16_t only guarantees 2. GCC does align standalone arrays to 8 on MIPS,
+// but that is an optimization it is free to drop, not a language guarantee --
+// state the requirement instead of inheriting it.
+_Alignas(8) uint16_t sequence_konami_code[] = {0x0000, 0xDEAD, 0xDEAD, 0xDEAD, 0x0000, 0x0000, 0x0000, 0x0000, BTN_UP, BTN_UP, BTN_DOWN, BTN_DOWN, BTN_LEFT, BTN_RIGHT, BTN_LEFT, BTN_RIGHT, BTN_QP, BTN_QK, 0xFFFF};
+
+static_assert(_Alignof(sequence_konami_code) == 8);
 
 bool check_sequence(uint16_t *const sequence, const uint16_t timeout)
 {
