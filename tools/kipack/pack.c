@@ -24,7 +24,6 @@
  * ============================================================================ */
 
 #define MAX_FILES 16
-#define MAX_FILE_SIZE (1024 * 1024)  // 1MB max per file
 #define MAX_OUTPUT_SIZE (512 * 1024) // 512KB max compressed output
 
 /* ============================================================================
@@ -134,7 +133,6 @@ typedef struct
 	uint8_t code_length[MAX_SYMBOLS];
 	uint8_t has_code[MAX_SYMBOLS];
 	uint32_t code[MAX_SYMBOLS];
-	uint8_t symbol_count;
 } huffman_table_t;
 
 /**
@@ -279,25 +277,22 @@ static huffman_node_t *build_tree(const huffman_table_t *table,
 
 /**
  * Builds Huffman codes from frequency counts.
- * Returns the number of unique symbols.
  *
  * Contract: the caller must have zeroed `table` (e.g. via reset_huffman_table)
  * before calling. This does not clear has_code or code_length itself, so a
  * stale has_code would survive for any symbol whose frequency has since
  * dropped to zero.
  */
-static uint8_t build_huffman_codes(huffman_table_t *table)
+static void build_huffman_codes(huffman_table_t *table)
 {
 	huffman_node_t nodes[MAX_SYMBOLS * 2];
 	int symbol_count = 0;
 
 	huffman_node_t *root = build_tree(table, nodes, &symbol_count);
 
-	table->symbol_count = symbol_count;
-
 	if (root == NULL)
 	{
-		return 0;
+		return;
 	}
 
 	if (root->symbol >= 0)
@@ -308,12 +303,10 @@ static uint8_t build_huffman_codes(huffman_table_t *table)
 		table->code[root->symbol] = 0;
 		table->code_length[root->symbol] = 0;
 		table->has_code[root->symbol] = 1;
-		return 1;
+		return;
 	}
 
 	assign_codes(root, table, 0, 0);
-
-	return table->symbol_count;
 }
 
 /**
@@ -345,7 +338,7 @@ typedef struct
 	uint32_t size;
 } serialized_table_t;
 
-static void serialize_node(huffman_node_t *node, serialized_table_t *out, huffman_table_t *table);
+static void serialize_node(huffman_node_t *node, serialized_table_t *out);
 
 static uint32_t calculate_subtree_size(huffman_node_t *node)
 {
@@ -360,7 +353,7 @@ static uint32_t calculate_subtree_size(huffman_node_t *node)
 	return skip_size + left_size + right_size;
 }
 
-static void serialize_node(huffman_node_t *node, serialized_table_t *out, huffman_table_t *table)
+static void serialize_node(huffman_node_t *node, serialized_table_t *out)
 {
 	if (node == NULL) return;
 
@@ -391,10 +384,10 @@ static void serialize_node(huffman_node_t *node, serialized_table_t *out, huffma
 	}
 
 	// Write right subtree first (bit=1 path, next entry)
-	serialize_node(node->right, out, table);
+	serialize_node(node->right, out);
 
 	// Write left subtree (bit=0 path, after skip)
-	serialize_node(node->left, out, table);
+	serialize_node(node->left, out);
 }
 
 /**
@@ -429,7 +422,7 @@ static void build_and_serialize_huffman(huffman_table_t *table, serialized_table
 		return;
 	}
 
-	serialize_node(root, out, table);
+	serialize_node(root, out);
 }
 
 /* ============================================================================

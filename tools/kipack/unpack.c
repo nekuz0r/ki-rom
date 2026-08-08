@@ -63,11 +63,6 @@ static int dump_bin(const char *output, int id, uint8_t *src, uint32_t length)
 	return 0;
 }
 
-static uint32_t sram(uint32_t offset)
-{
-	return offset + 0;
-}
-
 static uint32_t rom(uint32_t offset)
 {
 	return offset + 0x1fc00000;
@@ -568,14 +563,6 @@ static int64_t mtf_decode_reg(uint64_t table_addr, uint64_t index)
 	return (int64_t)value;
 }
 
-static inline uint64_t decode(uint64_t addr, int32_t offset, uint8_t shift, uint64_t *s0, uint32_t *s1, int8_t *s2)
-{
-	uint64_t v0 = READ32(addr, offset);
-	v0 = decode_huffman_symbol(v0, s0, s1, s2);
-	v0 = (uint8_t)READ8(v0, 0x0);
-	return v0 << shift;
-}
-
 /**
  * ROM offsets for decompression lookup tables.
  *
@@ -661,7 +648,6 @@ static const rom_offsets_t *current_rom = &rom_offsets[KIPACK_KI1];
 static int decompress_rom(const char *output_dir)
 {
 	// Memory addresses for decompression workspace
-	uint64_t video_ram = uncached_ram(sram(0x30000));
 	uint64_t bitstream_state_addr = cached_ram(dram(0x7fff00));
 	uint64_t compressed_data_addr = uncached_ram(rom(current_rom->compressed_data));
 	uint64_t workspace_addr = cached_ram(dram(0x7fff10));
