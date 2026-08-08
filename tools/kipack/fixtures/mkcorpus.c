@@ -45,6 +45,15 @@ static const uint32_t segment0[] = {
 	0x05010001,  /* bgez  t0,+4      regimm 1  -> 0x0c01                       */
 	0x05080005,  /* tgei  t0,5       regimm 8  -> 0x0801, imm t2               */
 	0x05051234,  /* regimm rt=5   -> 0, reserved: rs direct + imm t1           */
+	/*
+	 * These two share a target - 0x09234567 & 0x03ffffff == 0x0d234567 &
+	 * 0x03ffffff == 0x1234567 - so each of TABLE_JUMP_0..3 sees exactly one
+	 * distinct symbol across the whole corpus. That is what covers the
+	 * single-symbol Huffman table, whose code is 0 bits wide rather than 1,
+	 * and it is the only thing that covers it on a clone with no ROMs.
+	 * Changing either target to differ from the other silently removes that
+	 * coverage.
+	 */
 	0x09234567,  /* j     ...        opcode 2  -> 0x0100, 4-part target        */
 	0x0d234567,  /* jal   ...        opcode 3  -> 0x0100                       */
 	0x11090001,  /* beq   t0,t1,+4   opcode 4  -> 0x0c05, imm t3               */

@@ -37,6 +37,51 @@ if [ ! -x "$KIPACK" ]; then
 	exit 1
 fi
 
+# Run a command under a wall-clock bound and return its exit status.
+#
+# The malformed-input cases below all used to hang rather than fail, so an
+# unbounded run would wedge the suite instead of reporting. `timeout` is not
+# POSIX and is absent from a stock macOS, hence doing it by hand. A run that
+# gets killed reports its signal status, which is not the 1 the callers require
+# - so a regression to hanging shows up as a failure, not a pass.
+run_bounded() {
+	"$@" > /dev/null 2>&1 &
+	bounded_pid=$!
+	( sleep 15; kill -9 "$bounded_pid" ) 2> /dev/null &
+	bounded_killer=$!
+	wait "$bounded_pid" 2> /dev/null
+	bounded_status=$?
+	kill "$bounded_killer" 2> /dev/null
+	wait "$bounded_killer" 2> /dev/null
+	return $bounded_status
+}
+
+# Overwrite one byte of a file in place. offset is decimal, value octal.
+poke() {
+	printf "$3" | dd of="$1" bs=1 seek="$2" conv=notrunc 2> /dev/null
+}
+
+# Require unpack to reject an archive with its own exit code 1, promptly.
+reject_case() {
+	reject_name=$1
+	reject_file=$2
+
+	rm -rf "$WORK/syn/rej"
+	mkdir -p "$WORK/syn/rej"
+	# Captured through `if`, not a bare call: `set -e` is in effect, and would
+	# abort the suite on the very non-zero status this is here to inspect.
+	if run_bounded "$KIPACK" unpack -t packed "$reject_file" "$WORK/syn/rej"; then
+		reject_status=0
+	else
+		reject_status=$?
+	fi
+	if [ "$reject_status" = "1" ]; then
+		ok "reject $reject_name"
+	else
+		bad "reject $reject_name (exit $reject_status, wanted 1)"
+	fi
+}
+
 # Copy an image to a name that should sniff to a given variant, unpack it with
 # no -t, and require the result to match the corpus. Not marked `local`: this
 # is #!/bin/sh and `local` is not POSIX.
@@ -99,6 +144,40 @@ check_synthetic() {
 	sniff_case ki-p47-synth.u98 "$WORK/syn/ki1-p47.u98"    # "ki-p47" -> ki1-p47
 	sniff_case ki-l15d-synth.u98 "$WORK/syn/ki1.u98"       # no match -> ki1
 	sniff_case synth.packed     "$WORK/syn/corpus.packed"  # ".packed" -> packed
+
+	# 4. malformed input must be refused, not looped on.
+	#
+	# All three of these hung the decoder indefinitely before the guards went
+	# in, so they are the regression tests for it. The offsets are fixed by the
+	# format: the stream starts at KIPACK_PACKED_DATA (0x180) with a 16-bit
+	# magic and an 8-bit file count, which is 24 bits exactly, so the first
+	# file's 8-bit type lands on 0x183 and its 32-bit size on 0x184..0x187,
+	# byte-aligned and little-endian.
+	cp "$WORK/syn/corpus.packed" "$WORK/syn/bad-magic.packed"
+	poke "$WORK/syn/bad-magic.packed" 384 '\377'
+	reject_case "bad magic" "$WORK/syn/bad-magic.packed"
+
+	cp "$WORK/syn/corpus.packed" "$WORK/syn/zero-files.packed"
+	poke "$WORK/syn/zero-files.packed" 386 '\000'
+	reject_case "zero file count" "$WORK/syn/zero-files.packed"
+
+	# Only the size field's low byte is touched, so this holds whatever the
+	# corpus happens to be: 0x01 is odd, hence never a multiple of 4.
+	cp "$WORK/syn/corpus.packed" "$WORK/syn/odd-size.packed"
+	poke "$WORK/syn/odd-size.packed" 388 '\001'
+	reject_case "size not a multiple of 4" "$WORK/syn/odd-size.packed"
+
+	# 5. pack refuses a segment that is not whole 32-bit instructions. This is
+	#    the other half of the size guard - without it, pack writes a byte count
+	#    into the header while encoding only size/4 instructions.
+	mkdir -p "$WORK/syn/odd-in"
+	printf '\000\000\000\000\000\000' > "$WORK/syn/odd-in/rom-0.bin"
+	printf '\000\000\001\010'         > "$WORK/syn/odd-in/rom-0.addr"
+	if run_bounded "$KIPACK" pack "$WORK/syn/odd-in" "$WORK/syn/odd.packed"; then
+		bad "pack rejects a 6-byte segment"
+	else
+		ok "pack rejects a 6-byte segment"
+	fi
 }
 
 check_synthetic
