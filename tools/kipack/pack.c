@@ -276,14 +276,32 @@ static huffman_node_t *build_tree(const huffman_table_t *table,
 }
 
 /**
+ * Height of a tree, in edges. A leaf-only tree is 0.
+ */
+static uint32_t tree_height(const huffman_node_t *node)
+{
+	if (node == NULL || node->symbol >= 0)
+	{
+		return 0;
+	}
+
+	uint32_t left = tree_height(node->left);
+	uint32_t right = tree_height(node->right);
+
+	return 1 + (left > right ? left : right);
+}
+
+/**
  * Builds Huffman codes from frequency counts.
  *
  * Contract: the caller must have zeroed `table` (e.g. via reset_huffman_table)
  * before calling. This does not clear has_code or code_length itself, so a
  * stale has_code would survive for any symbol whose frequency has since
  * dropped to zero.
+ *
+ * Returns 0 on success, -1 if the tree needs codes wider than 32 bits.
  */
-static void build_huffman_codes(huffman_table_t *table)
+static int build_huffman_codes(huffman_table_t *table)
 {
 	huffman_node_t nodes[MAX_SYMBOLS * 2];
 	int symbol_count = 0;
@@ -292,7 +310,7 @@ static void build_huffman_codes(huffman_table_t *table)
 
 	if (root == NULL)
 	{
-		return;
+		return 0;
 	}
 
 	if (root->symbol >= 0)
@@ -303,10 +321,25 @@ static void build_huffman_codes(huffman_table_t *table)
 		table->code[root->symbol] = 0;
 		table->code_length[root->symbol] = 0;
 		table->has_code[root->symbol] = 1;
-		return;
+		return 0;
+	}
+
+	// A code is held in a uint32_t, and assign_codes builds it with
+	// `1 << depth` - undefined once depth reaches 32, and silently truncating
+	// after that. Reaching depth 33 takes roughly Fib(35) symbol occurrences
+	// (~9M) against the few hundred thousand instructions in a real segment,
+	// so no shipped ROM comes close - but nothing bounds the input size, and
+	// the failure mode is wrong output rather than a crash. Refuse instead.
+	uint32_t height = tree_height(root);
+	if (height > 32)
+	{
+		fprintf(stderr, "pack: Huffman tree is %u levels deep, "
+		        "codes wider than 32 bits are not representable\n", height);
+		return -1;
 	}
 
 	assign_codes(root, table, 0, 0);
+	return 0;
 }
 
 /**
@@ -866,8 +899,10 @@ static int load_input_file(const char *input_dir, int file_id, input_file_t *fil
 
 /**
  * First pass: collect symbol frequencies for all Huffman tables.
+ *
+ * Returns 0 on success, -1 if any table needs codes wider than 32 bits.
  */
-static void collect_frequencies(input_file_t *files, int file_count, huffman_table_t tables[KIPACK_NUM_TABLES])
+static int collect_frequencies(input_file_t *files, int file_count, huffman_table_t tables[KIPACK_NUM_TABLES])
 {
 	// Reset all tables
 	for (int t = 0; t < KIPACK_NUM_TABLES; t++)
@@ -1062,8 +1097,15 @@ static void collect_frequencies(input_file_t *files, int file_count, huffman_tab
 	// Build Huffman codes for all tables
 	for (int t = 0; t < KIPACK_NUM_TABLES; t++)
 	{
-		build_huffman_codes(&tables[t]);
+		if (build_huffman_codes(&tables[t]) != 0)
+		{
+			fprintf(stderr, "pack: while building Huffman table %d of %d\n",
+			        t, KIPACK_NUM_TABLES);
+			return -1;
+		}
 	}
+
+	return 0;
 }
 
 /**
@@ -1283,7 +1325,10 @@ static int compress_files(input_file_t *files, int file_count, const char *outpu
 	serialized_table_t serialized_tables[KIPACK_NUM_TABLES];
 
 	printf("Collecting symbol frequencies...\n");
-	collect_frequencies(files, file_count, tables);
+	if (collect_frequencies(files, file_count, tables) != 0)
+	{
+		return -1;
+	}
 
 	printf("Building Huffman tables...\n");
 	for (int t = 0; t < KIPACK_NUM_TABLES; t++)
