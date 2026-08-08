@@ -1281,6 +1281,19 @@ static void encode_file(input_file_t *file, huffman_table_t tables[KIPACK_NUM_TA
 		}
 
 		// Immediate field
+		//
+		// NOT structurally identical to unpack's matching block, and
+		// deliberately so. unpack tests 0x400 and 0x800 as standalone `if`s and
+		// hangs 0x1000 off the `else` of the 0xc00 test alone, so a flags value
+		// with (flags & 0xc00) == 0x400 AND 0x1000 set would run two blocks
+		// there and one here. No entry in any of the four lookup tables sets
+		// both, so the two are equivalent for every stream either side can
+		// produce - pack builds from its own compile-time tables, and unpack's
+		// come from a ROM.
+		//
+		// Left as-is rather than "harmonised": unpack mirrors the original
+		// hardware decoder and is the side that must not move. If you ever
+		// reshape this chain, reshape it towards unpack, not the other way.
 		uint16_t imm_type = format_flags & 0xC00;
 		if (imm_type == 0x400)
 		{

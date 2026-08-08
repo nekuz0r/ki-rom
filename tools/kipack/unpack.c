@@ -1026,6 +1026,14 @@ static int decompress_rom(const char *output_dir)
 				}
 
 				// Decode 16-bit immediate (3 different encoding types)
+				//
+				// The shape here is load-bearing: 0x400 and 0x800 are
+				// standalone `if`s, and the 0x1000 arm below is the `else` of
+				// the 0xc00 test alone. That is what the original decoder does,
+				// and format_flags is read out of the ROM at runtime, so it is
+				// not ours to simplify. pack.c's matching block is a single
+				// else-if chain, which differs only for a flags value no
+				// shipped table holds; see the note there.
 				if ((format_flags & 0xc00) == 0x400)
 				{
 					// Immediate type 1
