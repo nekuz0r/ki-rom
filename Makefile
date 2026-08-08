@@ -53,6 +53,11 @@ ROM_ZBIN = $(ROM_BIN:.bin=.zbin)
 .PHONY: gamerom
 gamerom: ${ROM_ZBIN}
 
+# The order-only prerequisites on the asset and segment rules below exist for
+# the same reason as this one: `rom:` lists `tools` before the targets that
+# invoke them, and under `make -j` that ordering means nothing. Without them a
+# recipe can run a tool binary while the `tools` target is still linking it.
+#
 # Grouped target (&:, GNU make >= 4.3): one invocation of kipack unpack
 # produces all six files. With a normal pattern rule make treats each output
 # as its own target, so `make -j` runs kipack unpack concurrently three times
@@ -69,7 +74,7 @@ ${ROM_BIN} ${ROM_ADDR} &: assets/roms/${ROM}.u98 | tools/kipack/kipack
 	mv build/roms/rom-2.bin build/roms/${ROM}-2.bin
 	mv build/roms/rom-2.addr build/roms/${ROM}-2.addr
 
-build/roms/${ROM}-%.zbin: build/roms/${ROM}-%.bin
+build/roms/${ROM}-%.zbin: build/roms/${ROM}-%.bin | tools/lzss/lzss
 	cp $< $@
 	tools/lzss/lzss -ewo $@
 
@@ -81,15 +86,15 @@ IMAGES_ZBIN = $(IMAGES_PNG:%.png=build/%.zbin) $(IMAGES_GIF:%.gif=build/%.zbin)
 .PHONY: images
 images: ${IMAGES_ZBIN}
 
-build/assets/images/%.bin: assets/images/%.png
+build/assets/images/%.bin: assets/images/%.png | tools/png2bin/png2bin
 	mkdir -p $(@D)
 	tools/png2bin/png2bin $< build/
 
-build/assets/images/%.bin: assets/images/%.gif
+build/assets/images/%.bin: assets/images/%.gif | tools/gif2bin/gif2bin
 	mkdir -p $(@D)
 	tools/gif2bin/gif2bin $< build/
 
-build/assets/images/%.zbin: build/assets/images/%.bin
+build/assets/images/%.zbin: build/assets/images/%.bin | tools/lzss/lzss
 	cp $< $@
 	tools/lzss/lzss -ewo $@
 
