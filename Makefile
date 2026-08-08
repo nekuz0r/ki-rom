@@ -44,7 +44,7 @@ clean:
 	-rm -rf build
 	-rm -rf tools/**/build
 	-rm -f font.h
-	-rm -f tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
+	-rm -f tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/fontgen/fontgen tools/disk-checksum/disk-checksum tools/kipack/kipack
 
 ROM_BIN = build/roms/${ROM}-0.bin build/roms/${ROM}-1.bin build/roms/${ROM}-2.bin
 ROM_ADDR = $(ROM_BIN:.bin=.addr)
@@ -53,14 +53,15 @@ ROM_ZBIN = $(ROM_BIN:.bin=.zbin)
 .PHONY: gamerom
 gamerom: ${ROM_ZBIN}
 
-# Grouped target (&:, GNU make >= 4.3): one invocation of rom-unpack produces
-# all six files. With a normal pattern rule make treats each output as its own
-# target, so `make -j` runs rom-unpack concurrently three times into the same
-# build/roms/rom-{0,1,2}.bin and the mv commands race -- silently producing
-# corrupt segments that are then compressed and linked into the ROM.
-${ROM_BIN} ${ROM_ADDR} &: assets/roms/${ROM}.u98
+# Grouped target (&:, GNU make >= 4.3): one invocation of kipack unpack
+# produces all six files. With a normal pattern rule make treats each output
+# as its own target, so `make -j` runs kipack unpack concurrently three times
+# into the same build/roms/rom-{0,1,2}.bin and the mv commands race --
+# silently producing corrupt segments that are then compressed and linked
+# into the ROM.
+${ROM_BIN} ${ROM_ADDR} &: assets/roms/${ROM}.u98 | tools/kipack/kipack
 	mkdir -p $(@D)
-	tools/rom-unpack/rom-unpack ./assets/roms/${ROM}.u98 ./build/roms
+	tools/kipack/kipack unpack ./assets/roms/${ROM}.u98 ./build/roms
 	mv build/roms/rom-0.bin build/roms/${ROM}-0.bin
 	mv build/roms/rom-0.addr build/roms/${ROM}-0.addr
 	mv build/roms/rom-1.bin build/roms/${ROM}-1.bin
@@ -93,7 +94,7 @@ build/assets/images/%.zbin: build/assets/images/%.bin
 	tools/lzss/lzss -ewo $@
 
 .PHONY: tools
-tools: tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/rom-unpack/rom-unpack tools/fontgen/fontgen tools/disk-checksum/disk-checksum
+tools: tools/lzss/lzss tools/png2bin/png2bin tools/gif2bin/gif2bin tools/fontgen/fontgen tools/disk-checksum/disk-checksum tools/kipack/kipack
 
 tools/lzss/lzss: $(wildcard tools/lzss/*.c tools/lzss/*.h) tools/lzss/Makefile
 	$(MAKE) -C tools/lzss
@@ -104,14 +105,14 @@ tools/png2bin/png2bin: $(wildcard tools/png2bin/*.c tools/png2bin/*.h) tools/png
 tools/gif2bin/gif2bin: $(wildcard tools/gif2bin/*.c tools/gif2bin/*.h) tools/gif2bin/Makefile
 	$(MAKE) -C tools/gif2bin
 
-tools/rom-unpack/rom-unpack:
-	$(MAKE) -C tools/rom-unpack
-
 tools/fontgen/fontgen: $(wildcard tools/fontgen/*.c tools/fontgen/*.h) tools/fontgen/Makefile
 	$(MAKE) -C tools/fontgen
 
 tools/disk-checksum/disk-checksum: $(wildcard tools/disk-checksum/*.c tools/disk-checksum/*.h) tools/disk-checksum/Makefile
 	$(MAKE) -C tools/disk-checksum
+
+tools/kipack/kipack: $(wildcard tools/kipack/*.c tools/kipack/*.h) tools/kipack/Makefile
+	$(MAKE) -C tools/kipack
 
 build/${BOARD}-${ROM}-print.o: font.h
 font.h: tools/fontgen/fontgen
