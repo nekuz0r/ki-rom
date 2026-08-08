@@ -287,15 +287,15 @@ static uint64_t read_32_bits(uint64_t *bit_buffer, uint32_t *stream_ptr, int8_t 
 }
 
 /**
- * Initializes two 32-byte Move-to-Front (MTF) tables with descending values.
+ * Initializes two 32-byte Move-to-End (MTE) tables with descending values.
  *
  * Each table is filled with values [31, 30, 29, ..., 1, 0] at indices [0, 1, 2, ..., 30, 31].
  * Table 1 is at offset 0x00, Table 2 is at offset 0x20 (32 bytes apart).
  *
- * These tables are used by the MTF transform during decompression, where frequently
- * used symbols are moved to the front of the list for better compression.
+ * These tables are used by the MTE transform during decompression, where recently
+ * used symbols are moved to the end of the list for better compression.
  *
- * @param table_base  Base address for the two MTF tables (each 32 bytes)
+ * @param table_base  Base address for the two MTE tables (each 32 bytes)
  */
 static void init_mtf_tables(uint8_t *table_base)
 {
@@ -466,26 +466,29 @@ static uint64_t decode_huffman_symbol(uint64_t table_ptr, uint64_t *bit_buffer, 
 }
 
 /**
- * Move-to-Front (MTF) update operation on a 32-byte table.
+ * Move-to-End (MTE) update operation on a 32-byte table.
  *
- * Finds the given symbol in the table and moves it to the front,
- * shifting all preceding elements down by one position.
+ * Finds the given symbol in the table and moves it to the END - index 31 -
+ * shifting everything after it down by one position.
  *
- * Example: If table is [A, B, C, D, E] and symbol is 'D':
- *   1. Find 'D' at index 3
- *   2. Shift elements: [A, B, C, _, E] -> [A, B, _, C, E] -> [A, _, B, C, E] -> [_, A, B, C, E]
- *   3. Insert 'D' at front: [D, A, B, C, E]
+ * Example: If table is [A, B, C, D, E] and symbol is 'B':
+ *   1. Find 'B' at index 1
+ *   2. Shift elements down: [A, C, D, E, E]
+ *   3. Insert 'B' at the end: [A, C, D, E, B]
  *
- * This keeps frequently used symbols near the front, improving compression
- * when combined with variable-length coding.
+ * This is NOT the Move-to-Front of the compression literature, where recently
+ * used symbols move to index 0. The KI algorithm moves them to index 31, so
+ * recently used registers get the HIGH indices and the Huffman tables for
+ * those indices are weighted accordingly. See "Why Move-to-End?" in README.md,
+ * and mtf_encode() in pack.c, which is the matching encoder.
  *
  * Returns 0 on success, -1 when the symbol is not one of the table's 32
  * entries.
  *
- * @param table_ptr  Pointer to the 32-byte MTF table
- * @param symbol     The symbol value to find and move to front
+ * @param table_ptr  Pointer to the 32-byte MTE table
+ * @param symbol     The symbol value to find and move to the end
  */
-static int mtf_move_to_front(uint64_t table_ptr, uint64_t symbol)
+static int mtf_move_to_end(uint64_t table_ptr, uint64_t symbol)
 {
 	int64_t position = -31;  // Start searching from position 0 (will count up to 0)
 	int i;
@@ -510,41 +513,41 @@ static int mtf_move_to_front(uint64_t table_ptr, uint64_t symbol)
 	}
 	if (i == 32)
 	{
-		fprintf(stderr, "unpack: MTF symbol 0x%02x is not in the table\n",
+		fprintf(stderr, "unpack: MTE symbol 0x%02x is not in the table\n",
 		        (unsigned)(symbol & 0xFF));
 		return -1;
 	}
 	// After loop: table_ptr points to where symbol was found
 	//             position is negative if symbol was not at the end
 
-	// PHASE 2: Shift elements backward to make room at front
+	// PHASE 2: Shift the elements after it down one slot
 	do
 	{
 		if (position >= 0)
 		{
-			break;  // Reached the front of the table
+			break;  // Reached the end of the table
 		}
 		int8_t next_value = READ8(table_ptr, 0x1);  // Read element ahead
 		position = position + 1;
 		table_ptr = table_ptr + 1;
-		WRITE8(table_ptr, -1, next_value);  // Shift element backward
+		WRITE8(table_ptr, -1, next_value);  // Shift it down one slot
 	} while (1);
 
-	// PHASE 3: Place the symbol at its new position (front)
+	// PHASE 3: Place the symbol at its new position (index 31, the end)
 	WRITE8(table_ptr, 0x0, symbol);
 	return 0;
 }
 
 /**
- * Reads the register held at `index` in a 32-entry MTF table, moves it to the
- * table's other end, and returns it.
+ * Reads the register held at `index` in a 32-entry MTE table, moves it to the
+ * end of that table, and returns it.
  *
  * `index` is a symbol the Huffman decoder produced, so it is a full byte and a
  * corrupt table can put it past the 32 entries. Reject that rather than
  * reading - and then reordering around - whatever follows the table in the
  * workspace.
  *
- * @param table_addr  Address of the 32-byte MTF table
+ * @param table_addr  Address of the 32-byte MTE table
  * @param index       Table index decoded from the bitstream
  * @return            The register value, or -1 if the index is out of range
  */
@@ -552,13 +555,13 @@ static int64_t mtf_decode_reg(uint64_t table_addr, uint64_t index)
 {
 	if (index >= 32)
 	{
-		fprintf(stderr, "unpack: MTF index %lu is past the 32 table entries\n",
+		fprintf(stderr, "unpack: MTE index %lu is past the 32 table entries\n",
 		        (unsigned long)index);
 		return -1;
 	}
 
 	uint64_t value = (uint8_t)READ8(table_addr + index, 0x0);
-	if (mtf_move_to_front(table_addr, value) != 0)
+	if (mtf_move_to_end(table_addr, value) != 0)
 	{
 		return -1;
 	}
@@ -646,7 +649,7 @@ static const rom_offsets_t *current_rom = &rom_offsets[KIPACK_KI1];
  * 1. Reads compressed data from ROM
  * 2. Decodes multiple embedded files (each containing MIPS code)
  * 3. Reconstructs 32-bit MIPS instructions from compressed components
- * 4. Uses Huffman coding + Move-to-Front transform for compression
+ * 4. Uses Huffman coding + Move-to-End transform for compression
  *
  * MIPS instruction format (32 bits):
  *   [opcode:6][rs:5][rt:5][rd:5][shamt:5][funct:6]  (R-type)
@@ -741,7 +744,7 @@ static int decompress_rom(const char *output_dir)
 
 		if (decompressed_size != 0)
 		{
-			// Initialize Move-to-Front tables for register encoding
+			// Initialize Move-to-End tables for register encoding
 			init_mtf_tables((uint8_t *)workspace_addr);
 
 			// Load 24 Huffman table pointers (offsets 0x40-0x9C in workspace)
@@ -929,7 +932,7 @@ static int decompress_rom(const char *output_dir)
 				// Decode rt field (bits 16-20)
 				if ((format_flags & 0x4) != 0)
 				{
-					// Decode rt with MTF table 1
+					// Decode rt with MTE table 1
 					decoded = READ32(workspace_addr, 0x50);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
@@ -940,7 +943,7 @@ static int decompress_rom(const char *output_dir)
 				}
 				else if ((format_flags & 0x8) != 0)
 				{
-					// Decode rt directly (no MTF)
+					// Decode rt directly (no MTE)
 					decoded = READ32(workspace_addr, 0x60);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					rt_field = rt_field | (uint8_t)READ8(decoded, 0x0);
@@ -951,7 +954,7 @@ static int decompress_rom(const char *output_dir)
 				{
 					if ((format_flags & 0x200) != 0)
 					{
-						// Decode rs with MTF table 2
+						// Decode rs with MTE table 2
 						decoded = READ32(workspace_addr, 0x5c);
 						decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 						uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
@@ -962,7 +965,7 @@ static int decompress_rom(const char *output_dir)
 					}
 					else
 					{
-						// Decode rs with MTF table 1
+						// Decode rs with MTE table 1
 						decoded = READ32(workspace_addr, 0x4c);
 						decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 						uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
@@ -974,7 +977,7 @@ static int decompress_rom(const char *output_dir)
 				}
 				else if ((format_flags & 0x2) != 0)
 				{
-					// Decode rs directly (no MTF)
+					// Decode rs directly (no MTE)
 					decoded = READ32(workspace_addr, 0x60);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					rs_field = rs_field | (uint8_t)READ8(decoded, 0x0);
@@ -983,7 +986,7 @@ static int decompress_rom(const char *output_dir)
 				// Decode rd field (bits 11-15)
 				if ((format_flags & 0x10) != 0)
 				{
-					// Decode rd with MTF table 1
+					// Decode rd with MTE table 1
 					decoded = READ32(workspace_addr, 0x54);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
@@ -994,7 +997,7 @@ static int decompress_rom(const char *output_dir)
 				}
 				else if ((format_flags & 0x20) != 0)
 				{
-					// Decode rd directly (no MTF)
+					// Decode rd directly (no MTE)
 					decoded = READ32(workspace_addr, 0x60);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					rd_field = rd_field | (uint8_t)READ8(decoded, 0x0);

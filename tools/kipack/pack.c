@@ -433,7 +433,13 @@ static void build_and_serialize_huffman(huffman_table_t *table, serialized_table
 }
 
 /* ============================================================================
- * Move-to-Front (MTF) Encoder
+ * Move-to-End (MTE) Encoder
+ *
+ * The `mtf` prefix on the identifiers below is historical. This is NOT the
+ * Move-to-Front of the compression literature: the KI algorithm moves the
+ * symbol to index 31, so recently used registers get the HIGH indices. See
+ * "Why Move-to-End?" in README.md, and mtf_move_to_end() in unpack.c, which is
+ * the matching decoder.
  * ============================================================================ */
 
 typedef struct
@@ -442,7 +448,7 @@ typedef struct
 } mtf_table_t;
 
 /**
- * Initializes an MTF table with values [31, 30, ..., 1, 0].
+ * Initializes an MTE table with values [31, 30, ..., 1, 0].
  */
 static void init_mtf_table(mtf_table_t *mtf)
 {
@@ -453,7 +459,7 @@ static void init_mtf_table(mtf_table_t *mtf)
 }
 
 /**
- * Encodes a value using MTF and returns the index.
+ * Encodes a value using MTE and returns the index.
  * Also updates the table by moving the value to end (matching unpack.c behavior).
  */
 static uint8_t mtf_encode(mtf_table_t *mtf, uint8_t value)
