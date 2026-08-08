@@ -82,8 +82,8 @@ static const uint32_t segment1[] = {
  * make any Huffman subtree reach 128 serialized bytes - so nothing above ever
  * reaches the 2-byte skip count that pack writes (and unpack reads back) for a
  * right subtree that large. Every real ROM uses that path, so without this
- * segment it would go entirely untested on a fresh clone, where
- * assets/roms/*.u98 is never present.
+ * segment it would go entirely untested on a fresh clone, where the .u98 files
+ * under assets/roms are never present.
  *
  * addiu is opcode 9 -> 0x0805, whose 16-bit immediate is split across plain
  * Huffman tables IMM_HI_3 and IMM_LO_3 (0x0805 & 0xC00 == 0x800 selects that

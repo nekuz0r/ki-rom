@@ -1,4 +1,8 @@
 GCC ?= gcc-14
+# Not -Werror: this has to keep building on whatever compiler a contributor
+# has. The three unchecked freads that shipped with the first version of this
+# tool were all diagnosed by the default warning set alone.
+WARNINGS = -Wall -Wextra
 SRCS = main.c pack.c unpack.c
 OBJS = $(SRCS:%.c=build/%.o)
 DEPS = $(SRCS:%.c=build/%.d)
@@ -10,12 +14,12 @@ kipack: $(OBJS)
 
 build/%.o: %.c
 	mkdir -p $(@D)
-	$(GCC) -MMD -O3 -c $< -o $@
+	$(GCC) -MMD $(WARNINGS) -O3 -c $< -o $@
 
 FIXTURE_TOOLS = fixtures/mkcorpus fixtures/mkromimage
 
 fixtures/%: fixtures/%.c kipack.h
-	$(GCC) -O2 -o $@ $<
+	$(GCC) $(WARNINGS) -O2 -o $@ $<
 
 .PHONY: check
 check: kipack $(FIXTURE_TOOLS)
