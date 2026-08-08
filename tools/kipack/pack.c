@@ -7,7 +7,7 @@
  *
  * Compression algorithm:
  *   1. Huffman coding for instruction fields
- *   2. Move-to-Front (MTF) transform for register encoding
+ *   2. Move-to-End (MTE) transform for register encoding
  *   3. MIPS instruction-aware field separation
  */
 

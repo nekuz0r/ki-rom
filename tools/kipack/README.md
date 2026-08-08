@@ -744,11 +744,11 @@ directly or add a row to your own dispatch table.
 make -C tools/kipack check
 ```
 
-24 checks, in four groups:
+28 checks, in four groups:
 
 | Group | Checks | Needs ROMs |
 |-------|--------|------------|
-| Synthetic | 8 | no |
+| Synthetic | 12 | no |
 | Baseline manifests | 2 | yes |
 | Round-trip per ROM | 13 | yes |
 | Size sweep | 1 | yes |
@@ -762,8 +762,15 @@ same stream at each real variant's table offsets, which lets the KI1, KI1-p47
 and KI2 table layouts and all four arms of the file-name heuristic be tested
 without shipping a single byte of Rare's data.
 
+Four of the twelve are negative checks: they hand `unpack` an archive with a
+bad magic, a zero file count, and a size that is not a multiple of 4, and hand
+`pack` a segment that is not whole instructions. The middle two used to hang
+the decoder forever, so each runs under a wall-clock bound and must exit with
+the applet's own code 1 — a regression to hanging reports the kill signal
+instead, and fails.
+
 The remaining groups read `assets/roms/*.u98`, which are not in the repository.
-With no ROMs present the suite reports **8 passed** and exits 0 rather than
+With no ROMs present the suite reports **12 passed** and exits 0 rather than
 failing; `ROMS=<dir>` points it at another ROM directory.
 
 The **baseline manifests** in `fixtures/expected/` are SHA-256 lists of every
@@ -775,7 +782,7 @@ output changes: any edit that alters a compressed byte shows up here.
 ```
 
 Only do that when the output was *meant* to change, and say why in the commit
-message. `--update` refuses to run while any of the 8 synthetic checks is
+message. `--update` refuses to run while any of the 12 synthetic checks is
 failing — otherwise a broken codec could overwrite the manifests with its own
 output and report success — and refuses to run with no ROMs present, rather
 than exiting 0 having written nothing.
@@ -784,7 +791,7 @@ The suite no longer depends on any untracked tool. It used to include a parity
 group that cross-checked `unpack` output against a separate, untracked
 decompressor; that group was retired once the older tool was dropped from the
 build, leaving the baseline manifests and the synthetic corpus as the sole
-oracles — so the full 24-check suite runs correctly on a fresh clone.
+oracles — so nothing in the suite needs anything a fresh clone does not have.
 
 ---
 
