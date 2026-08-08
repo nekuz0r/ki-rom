@@ -23,10 +23,10 @@
  *    .bss, so it costs address space and touched pages rather than image
  *    size, but it is not sized to the input and is not freed on return.
  *
- *  - That array is global and persists across calls. Loading a ROM always
- *    reads 0x80000 bytes without checking how many it got, so a call with a
- *    file shorter than 0x80000 leaves the previous ROM's tail in place and
- *    decodes over it. Not reentrant, and not safe to call concurrently.
+ *  - That array is global and persists across calls. Loading a ROM clears the
+ *    ROM window before reading, so a second call with a file shorter than the
+ *    window no longer decodes over the previous ROM's tail - but the array is
+ *    still shared state. Not reentrant, and not safe to call concurrently.
  */
 int kipack_unpack(const char *rom_path, const char *out_dir, kipack_variant_t variant);
 

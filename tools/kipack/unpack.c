@@ -108,6 +108,9 @@ static void WRITE32(uint32_t base, int32_t offset, uint32_t value)
 	*(uint32_t *)(p + offset) = value;
 }
 
+/* Size of the ROM window the boot ROM is mapped into. */
+#define ROM_WINDOW_SIZE 0x80000
+
 static int load_rom(const char *filename)
 {
 	FILE *fd = fopen(filename, "rb");
@@ -116,8 +119,27 @@ static int load_rom(const char *filename)
 		fprintf(stderr, "unpack: %s: cannot open\n", filename);
 		return -1;
 	}
-	fread(ram + rom(0x00), 1, 0x80000, fd);
+
+	// Clear the window first. A .packed file is far shorter than a boot ROM,
+	// so a short read is normal here and must not be treated as an error - but
+	// without the clear, a second call in the same process would decode over
+	// whatever the previous ROM left behind.
+	memset(ram + rom(0x00), 0, ROM_WINDOW_SIZE);
+
+	size_t got = fread(ram + rom(0x00), 1, ROM_WINDOW_SIZE, fd);
+	int failed = ferror(fd);
 	fclose(fd);
+
+	if (failed)
+	{
+		fprintf(stderr, "unpack: %s: read error\n", filename);
+		return -1;
+	}
+	if (got == 0)
+	{
+		fprintf(stderr, "unpack: %s: empty\n", filename);
+		return -1;
+	}
 	return 0;
 }
 

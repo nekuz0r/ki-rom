@@ -800,7 +800,15 @@ static int load_input_file(const char *input_dir, int file_id, input_file_t *fil
 	{
 		return 0;  // File doesn't exist
 	}
-	fread(&file->load_addr, 4, 1, addr_fd);
+	// Unchecked, a short or empty .addr leaves load_addr holding whatever was
+	// on the stack, and that value is written into the archive as the
+	// segment's load address.
+	if (fread(&file->load_addr, 4, 1, addr_fd) != 1)
+	{
+		fprintf(stderr, "pack: %s: short read, expected 4 bytes\n", addr_path);
+		fclose(addr_fd);
+		return -1;
+	}
 	fclose(addr_fd);
 
 	// Load binary file
@@ -828,7 +836,10 @@ static int load_input_file(const char *input_dir, int file_id, input_file_t *fil
 		return -1;
 	}
 
-	file->data = malloc(file->size);
+	// A zero-length segment is legal - pack writes its header and skips the
+	// body - but malloc(0) is allowed to return NULL, which would look like an
+	// allocation failure here. Ask for one byte instead.
+	file->data = malloc(file->size != 0 ? file->size : 1);
 	if (file->data == NULL)
 	{
 		fprintf(stderr, "pack: %s: cannot allocate %u bytes\n", bin_path, file->size);
@@ -836,7 +847,14 @@ static int load_input_file(const char *input_dir, int file_id, input_file_t *fil
 		return -1;
 	}
 
-	fread(file->data, 1, file->size, bin_fd);
+	if (fread(file->data, 1, file->size, bin_fd) != (size_t)file->size)
+	{
+		fprintf(stderr, "pack: %s: short read, expected %u bytes\n", bin_path, file->size);
+		free(file->data);
+		file->data = NULL;
+		fclose(bin_fd);
+		return -1;
+	}
 	fclose(bin_fd);
 
 	printf("Loaded rom-%d: size=0x%x, addr=0x%08x\n", file_id, file->size, file->load_addr);
