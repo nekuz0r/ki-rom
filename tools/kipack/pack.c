@@ -1472,6 +1472,12 @@ int kipack_pack(const char *in_dir, const char *out_path, int max_files)
 	if (max_files > MAX_FILES)
 		max_files = MAX_FILES;
 
+	if (max_files < 1)
+	{
+		fprintf(stderr, "pack: count must be at least 1, got %d\n", max_files);
+		return -1;
+	}
+
 	for (int i = 0; i < max_files; i++)
 	{
 		int result = load_input_file(in_dir, i, &files[file_count]);
@@ -1510,7 +1516,24 @@ int kipack_pack_main(int argc, char **argv)
 		return 1;
 	}
 
-	int max_files = (argc > 3) ? atoi(argv[3]) : MAX_FILES;
+	int max_files = MAX_FILES;
+
+	if (argc > 3)
+	{
+		// atoi cannot distinguish "0" from "abc", and both used to sail
+		// through to "no rom-N.bin/.addr pairs found in <dir>" - blaming the
+		// directory for a bad argument.
+		char *end;
+		long count = strtol(argv[3], &end, 10);
+
+		if (*argv[3] == '\0' || *end != '\0' || count < 1 || count > MAX_FILES)
+		{
+			fprintf(stderr, "pack: count must be a number in 1..%d, got '%s'\n",
+			        MAX_FILES, argv[3]);
+			return 1;
+		}
+		max_files = (int)count;
+	}
 
 	return kipack_pack(argv[1], argv[2], max_files) == 0 ? 0 : 1;
 }
