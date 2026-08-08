@@ -436,24 +436,41 @@ static uint64_t decode_huffman_symbol(uint64_t table_ptr, uint64_t *bit_buffer, 
  * This keeps frequently used symbols near the front, improving compression
  * when combined with variable-length coding.
  *
+ * Returns 0 on success, -1 when the symbol is not one of the table's 32
+ * entries.
+ *
  * @param table_ptr  Pointer to the 32-byte MTF table
  * @param symbol     The symbol value to find and move to front
  */
-static void mtf_move_to_front(uint64_t table_ptr, uint64_t symbol)
+static int mtf_move_to_front(uint64_t table_ptr, uint64_t symbol)
 {
 	int64_t position = -31;  // Start searching from position 0 (will count up to 0)
+	int i;
 
-	// PHASE 1: Search for the symbol in the table
-	do
+	// PHASE 1: Search for the symbol in the table.
+	//
+	// Bounded at the table's 32 entries. `symbol` is read out of the workspace
+	// at an index the bitstream decoded, so a corrupt stream can ask for a
+	// value that is in no table at all - and the comparison used to be int8_t
+	// against a zero-extended uint64_t, which no entry >= 0x80 could ever
+	// satisfy. Unbounded, the scan then ran off the end of the 32-byte table
+	// and through the rest of the workspace until some byte happened to match,
+	// or spun forever.
+	for (i = 0; i < 32; i++)
 	{
-		int8_t current_value = READ8(table_ptr, 0x0);
-		if (current_value == (symbol & 0xFF))
+		if ((uint8_t)READ8(table_ptr, 0x0) == (uint8_t)symbol)
 		{
 			break;  // Found the symbol
 		}
 		position = position + 1;
 		table_ptr = table_ptr + 1;
-	} while (1);
+	}
+	if (i == 32)
+	{
+		fprintf(stderr, "unpack: MTF symbol 0x%02x is not in the table\n",
+		        (unsigned)(symbol & 0xFF));
+		return -1;
+	}
 	// After loop: table_ptr points to where symbol was found
 	//             position is negative if symbol was not at the end
 
@@ -472,6 +489,37 @@ static void mtf_move_to_front(uint64_t table_ptr, uint64_t symbol)
 
 	// PHASE 3: Place the symbol at its new position (front)
 	WRITE8(table_ptr, 0x0, symbol);
+	return 0;
+}
+
+/**
+ * Reads the register held at `index` in a 32-entry MTF table, moves it to the
+ * table's other end, and returns it.
+ *
+ * `index` is a symbol the Huffman decoder produced, so it is a full byte and a
+ * corrupt table can put it past the 32 entries. Reject that rather than
+ * reading - and then reordering around - whatever follows the table in the
+ * workspace.
+ *
+ * @param table_addr  Address of the 32-byte MTF table
+ * @param index       Table index decoded from the bitstream
+ * @return            The register value, or -1 if the index is out of range
+ */
+static int64_t mtf_decode_reg(uint64_t table_addr, uint64_t index)
+{
+	if (index >= 32)
+	{
+		fprintf(stderr, "unpack: MTF index %lu is past the 32 table entries\n",
+		        (unsigned long)index);
+		return -1;
+	}
+
+	uint64_t value = (uint8_t)READ8(table_addr + index, 0x0);
+	if (mtf_move_to_front(table_addr, value) != 0)
+	{
+		return -1;
+	}
+	return (int64_t)value;
 }
 
 static inline uint64_t decode(uint64_t addr, int32_t offset, uint8_t shift, uint64_t *s0, uint32_t *s1, int8_t *s2)
@@ -595,6 +643,17 @@ static int decompress_rom(const char *output_dir)
 
 	// Read number of compressed files
 	uint64_t file_count = read_8_bits(&bit_buffer, &stream_ptr, &bits_remaining);
+
+	// The file loop below is a do/while that decrements after each pass, so a
+	// count of zero underflows to UINT64_MAX and spins. pack never emits it -
+	// it refuses a run with no input pairs - so any stream carrying it is
+	// corrupt.
+	if (file_count == 0)
+	{
+		fprintf(stderr, "unpack: file count is zero\n");
+		return -1;
+	}
+
 	uint64_t total_files = file_count;
 	uint64_t files_remaining = file_count;
 
@@ -612,6 +671,20 @@ static int decompress_rom(const char *output_dir)
 
 		// Read decompressed size and destination address
 		uint64_t decompressed_size = read_32_bits(&bit_buffer, &stream_ptr, &bits_remaining);
+
+		// The instruction loop below counts this down by 4 and stops at exactly
+		// 0, so a size that is not a whole number of 32-bit instructions wraps
+		// its unsigned counter and spins. pack refuses such an input at load
+		// time; refuse it here too, because unpack is the side that reads
+		// streams it did not produce.
+		if (decompressed_size % 4 != 0)
+		{
+			fprintf(stderr, "unpack: file %lu: size %lu is not a multiple of 4\n",
+			        (unsigned long)(total_files - files_remaining),
+			        (unsigned long)decompressed_size);
+			return -1;
+		}
+
 		uint64_t original_size = decompressed_size;
 
 		uint64_t dest_addr = read_32_bits(&bit_buffer, &stream_ptr, &bits_remaining);
@@ -817,10 +890,10 @@ static int decompress_rom(const char *output_dir)
 					decoded = READ32(workspace_addr, 0x50);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
-					uint64_t mtf_table = workspace_addr + 0x0;
-					uint64_t reg_value = (uint8_t)READ8(mtf_index + workspace_addr, 0x0);
-					rt_field = rt_field | reg_value;
-					mtf_move_to_front(mtf_table, reg_value);
+					int64_t reg_value = mtf_decode_reg(workspace_addr + 0x0, mtf_index);
+					if (reg_value < 0)
+						return -1;
+					rt_field = rt_field | (uint64_t)reg_value;
 				}
 				else if ((format_flags & 0x8) != 0)
 				{
@@ -839,10 +912,10 @@ static int decompress_rom(const char *output_dir)
 						decoded = READ32(workspace_addr, 0x5c);
 						decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 						uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
-						uint64_t mtf_table = workspace_addr + 0x20;
-						uint64_t reg_value = (uint8_t)READ8(mtf_index + workspace_addr, 0x20);
-						rs_field = rs_field | reg_value;
-						mtf_move_to_front(mtf_table, reg_value);
+						int64_t reg_value = mtf_decode_reg(workspace_addr + 0x20, mtf_index);
+						if (reg_value < 0)
+							return -1;
+						rs_field = rs_field | (uint64_t)reg_value;
 					}
 					else
 					{
@@ -850,10 +923,10 @@ static int decompress_rom(const char *output_dir)
 						decoded = READ32(workspace_addr, 0x4c);
 						decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 						uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
-						uint64_t mtf_table = workspace_addr + 0;
-						uint64_t reg_value = (uint8_t)READ8(mtf_index + workspace_addr, 0x0);
-						rs_field = rs_field | reg_value;
-						mtf_move_to_front(mtf_table, reg_value);
+						int64_t reg_value = mtf_decode_reg(workspace_addr + 0x0, mtf_index);
+						if (reg_value < 0)
+							return -1;
+						rs_field = rs_field | (uint64_t)reg_value;
 					}
 				}
 				else if ((format_flags & 0x2) != 0)
@@ -871,10 +944,10 @@ static int decompress_rom(const char *output_dir)
 					decoded = READ32(workspace_addr, 0x54);
 					decoded = decode_huffman_symbol(decoded, &bit_buffer, &stream_ptr, &bits_remaining);
 					uint64_t mtf_index = (uint8_t)READ8(decoded, 0x0);
-					uint64_t mtf_table = workspace_addr + 0;
-					uint64_t reg_value = (uint8_t)READ8(mtf_index + workspace_addr, 0x0);
-					rd_field = rd_field | reg_value;
-					mtf_move_to_front(mtf_table, reg_value);
+					int64_t reg_value = mtf_decode_reg(workspace_addr + 0x0, mtf_index);
+					if (reg_value < 0)
+						return -1;
+					rd_field = rd_field | (uint64_t)reg_value;
 				}
 				else if ((format_flags & 0x20) != 0)
 				{
