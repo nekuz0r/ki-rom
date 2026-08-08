@@ -11,6 +11,35 @@
 
 static uint8_t ram[0x20000000];
 
+/*
+ * Write a whole file, or fail loudly.
+ *
+ * Unchecked, a short write here produces a truncated segment that `make rom`
+ * then compresses and links into the ROM as if it were complete.
+ */
+static int write_file(const char *path, const void *data, size_t length)
+{
+	FILE *fd = fopen(path, "wb");
+	if (fd == NULL)
+	{
+		fprintf(stderr, "unpack: %s: cannot create\n", path);
+		return -1;
+	}
+	if (length != 0 && fwrite(data, 1, length, fd) != length)
+	{
+		fprintf(stderr, "unpack: %s: short write\n", path);
+		fclose(fd);
+		return -1;
+	}
+	// Buffered data is flushed here, so a full disk can surface at close.
+	if (fclose(fd) != 0)
+	{
+		fprintf(stderr, "unpack: %s: write failed on close\n", path);
+		return -1;
+	}
+	return 0;
+}
+
 static int dump_bin(const char *output, int id, uint8_t *src, uint32_t length)
 {
 	char filename[256] = {0};
@@ -18,24 +47,16 @@ static int dump_bin(const char *output, int id, uint8_t *src, uint32_t length)
 	snprintf(filename, sizeof(filename), "%s/rom-%d.bin", output, id);
 	snprintf(addr_filename, sizeof(addr_filename), "%s/rom-%d.addr", output, id);
 
-	FILE *fd = fopen(filename, "wb+");
-	if (fd == NULL)
+	if (write_file(filename, src, length) != 0)
 	{
-		fprintf(stderr, "unpack: %s: cannot create\n", filename);
 		return -1;
 	}
-	fwrite(src, 1, length, fd);
-	fclose(fd);
 
-	fd = fopen(addr_filename, "wb+");
-	if (fd == NULL)
+	uint32_t addr = src - ram;
+	if (write_file(addr_filename, &addr, sizeof(addr)) != 0)
 	{
-		fprintf(stderr, "unpack: %s: cannot create\n", addr_filename);
 		return -1;
 	}
-	uint32_t addr = src - ram;
-	fwrite(&addr, 4, 1, fd);
-	fclose(fd);
 
 	printf("unpacked rom-%d @ 0x%08lx (length = 0x%x)\n",
 	       id, (unsigned long)(src - ram), length);

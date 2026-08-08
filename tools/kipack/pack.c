@@ -1384,8 +1384,22 @@ static int compress_files(input_file_t *files, int file_count, const char *outpu
 		return -1;
 	}
 
-	fwrite(output, 1, output_size, out_fd);
-	fclose(out_fd);
+	// Unchecked, a short write yields a truncated archive that unpack reads as
+	// a valid but wrong ROM. fclose is checked too: that is where the flush
+	// happens, so a full disk can surface there rather than at the fwrite.
+	if (fwrite(output, 1, output_size, out_fd) != (size_t)output_size)
+	{
+		fprintf(stderr, "pack: %s: short write\n", output_path);
+		fclose(out_fd);
+		free(output);
+		return -1;
+	}
+	if (fclose(out_fd) != 0)
+	{
+		fprintf(stderr, "pack: %s: write failed on close\n", output_path);
+		free(output);
+		return -1;
+	}
 
 	free(output);
 
