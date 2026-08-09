@@ -21,6 +21,25 @@ uint16_t ide_wait_ready(void)
     return gIDEControl.alternateStatus;
 }
 
+/*
+ * WRITE SECTOR(S) signals readiness for each data block with DRQ, not with
+ * INTRQ, so the data-out path cannot use ide_ack() to know when the drive is
+ * ready to accept a block. Waits for BSY clear and DRQ set.
+ */
+uint16_t ide_wait_drq(void)
+{
+    uint32_t count = 0x5f0000;
+    do
+    {
+        if (count == 0)
+        {
+            return 0x100; // Indicate a timeout condition
+        }
+        count--;
+    } while ((gIDEControl.alternateStatus & 0x88) != 0x08); // BSY set or DRQ clear
+    return gIDEControl.alternateStatus;
+}
+
 uint16_t ide_ack(void)
 {
     uint32_t count = 0x2460000;
@@ -132,11 +151,18 @@ void ide_write_sectors(uint32_t lba, uint32_t count, uint8_t *buf)
         count -= sector_count;
         ide_wait_ready();
         ide_seek(lba, sector_count & 0xff);
-        gIDE.command = 0x31; // write sectors command
+        gIDE.command = 0x30; // write sectors command (with retry)
 
         // write sectors
         do
         {
+            // The drive needs a moment after the command write before it can
+            // accept data; pushing it immediately writes into a busy drive.
+            if ((ide_wait_drq() & 0x100) != 0)
+            {
+                return; // Drive never asked for the data
+            }
+
             ide_write_sector_bytes((uint16_t *)buf);
             ide_ack();
             buf += 0x200;
