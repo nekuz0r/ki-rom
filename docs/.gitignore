@@ -1,0 +1,5 @@
+# Working notes from the superpowers skill workflow - design specs and
+# implementation plans written while developing a change. They describe how a
+# change was arrived at, which the commits and their messages already record,
+# so they are kept locally rather than in the repository.
+superpowers/

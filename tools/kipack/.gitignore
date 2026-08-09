@@ -1,0 +1,5 @@
+kipack
+build
+fixtures/mkcorpus
+fixtures/mkromimage
+fixtures/mkbadstream
