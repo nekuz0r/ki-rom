@@ -13,6 +13,7 @@
 #include "io.h"
 #include "ki.h"
 #include "mem.h"
+#include "bootrom.h"
 
 #define HUD_Y (202) // First scanline of the bottom bar; the arena is above it.
 
@@ -203,6 +204,37 @@ static void draw_hud(const uint16_t key)
     print_center(160, 228, "BOOTROM V2.0.1   " KI_BOARD_STR "   WWW.KILLER-INSTINCT.NET");
 }
 
+static const uint8_t banks[BOOTSELECT_ENTRIES] = {
+    [BOOTSELECT_KI1] = BOOTROM_BANK_KI1,
+    [BOOTSELECT_KI2] = BOOTROM_BANK_KI2,
+};
+
+/**
+ * Hands off to the chosen game. Never returns.
+ *
+ * Selecting the bank that is already mapped issues no IDE command at all --
+ * which is also the guard against swapping this image out from under itself.
+ * The other bank goes through bootrom_swap(), which enters the newly mapped
+ * image through its own reset vector and does not come back.
+ *
+ * _reset rather than view_switch: it reinitialises everything SRAM holds, so
+ * the hero images this view allocated are reclaimed wholesale and unload() is
+ * never needed. Same hand-off patch_kix_reset.c makes to re-enter this view.
+ */
+[[noreturn]] static void boot(const uint8_t entry)
+{
+    const uint8_t bank = banks[entry];
+
+    if (bank != BOOTROM_BANK_SELF)
+    {
+        // Returns only when the device refused the command, in which case the
+        // mapped bank is still ours and falling through is safe.
+        bootrom_swap(bank);
+    }
+
+    _reset(&view_main);
+}
+
 static void render(const uint64_t frame_count)
 {
     (void)frame_count;
@@ -221,11 +253,7 @@ static void render(const uint64_t frame_count)
     {
     case BOOTSELECT_CONFIRMED:
     case BOOTSELECT_EXPIRED:
-        // One game image is embedded, so both entries hand off to the same
-        // loader. Which entry was chosen becomes meaningful when the ROM carries
-        // two game images.
-        return _reset(&view_main);
-        // return view_switch(&view_main);
+        return boot(state.selected);
     default:
         break;
     }

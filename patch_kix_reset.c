@@ -11,8 +11,6 @@
 #include "sound.h"
 #include "cache.h"
 
-extern void _reset(view_t *view) __attribute__((far));
-
 #if defined(KI_L15DI)
 static constexpr uintptr_t general_interrupt_handler_addr = 0x880265b8 + 0x8;
 #elif defined(KI_L15D)

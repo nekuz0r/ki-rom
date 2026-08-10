@@ -26,4 +26,14 @@ extern view_t *view_current;
 
 void view_switch(view_t *view);
 
+/**
+ * Re-enters start.S: cache init, TLB init, .data copy, .bss clear and a fresh
+ * heap, then main() with `view`. Everything SRAM holds is reinitialised, so a
+ * caller does not unload the view it is leaving.
+ *
+ * far: callers include SRAM-resident detour hooks at 0x8000xxxx, and this lives
+ * in the ROM window at 0x9FCxxxxx -- too far for jal to encode.
+ */
+extern void _reset(view_t *view) __attribute__((noreturn, far));
+
 #endif
