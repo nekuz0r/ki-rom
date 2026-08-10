@@ -55,6 +55,17 @@ build/${BOARD}-${ROM}-%.o: %.c
 #-DHDD_2IN1 -DROM_2IN1
 # -mstrict-align
 
+# A .ramcode function keeps running while the ROM window holds a different
+# image, so a single reach back into ROM is fatal and nothing in the toolchain
+# catches it. This is that check.
+.PHONY: check-ramcode
+check-ramcode: rom
+	OBJDUMP=$(OBJDUMP) tools/check-ramcode.sh build/${BOARD}-${ROM}.elf
+
+.PHONY: check-ramcode-all
+check-ramcode-all:
+	@for f in build/*.elf; do OBJDUMP=$(OBJDUMP) tools/check-ramcode.sh $$f || exit 1; done
+
 .PHONY: clean
 clean:
 	-rm -rf build

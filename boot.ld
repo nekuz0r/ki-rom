@@ -30,6 +30,8 @@ SECTIONS {
         *(.rodata);
         *(.rodata.*);
         *(.detour.*);
+        . = ALIGN(4);
+        *(.ramcode);
         _edata = .;
     } > sram AT > rom
 
