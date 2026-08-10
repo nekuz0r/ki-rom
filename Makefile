@@ -6,6 +6,19 @@ BOARD = 19489
 ROM = ki-l15d
 BOOT_VIEW = view_main
 
+# Instrumentation and variant selection are build flags, not #defines buried in
+# the tree. DEBUG was one of those -- in main.c, where no second translation unit
+# could see it and no build invocation could switch it off. The 2-in-1 defines
+# were the other extreme, a commented-out fragment of a recipe line edited by hand.
+#
+# Object names carry BOARD and ROM but neither of these, so flipping either one
+# does not invalidate the objects built with the other setting: changing DEBUG or
+# MULTIBOOT needs a `make clean`.
+DEBUG ?= 1
+MULTIBOOT ?= 0
+DEBUG_FLAGS = $(if $(filter 1,$(DEBUG)),-DDEBUG)
+MULTIBOOT_FLAGS = $(if $(filter 1,$(MULTIBOOT)),-DHDD_2IN1 -DROM_2IN1)
+
 # Without this, an interrupted or failing recipe leaves its half-written target
 # on disk. That is actively dangerous for the .zbin rules, which "cp" the raw
 # file into place before compressing it: a failed lzss leaves an uncompressed
@@ -68,8 +81,7 @@ build/${BOARD}-${ROM}-start.o: ${BOOT_VIEW_STAMP}
 
 build/${BOARD}-${ROM}-%.o: %.c
 	mkdir -p $(@D)
-	$(CC) -MMD -MP -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} 
-#-DHDD_2IN1 -DROM_2IN1
+	$(CC) -MMD -MP -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} ${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}
 # -mstrict-align
 
 # A .ramcode function keeps running while the ROM window holds a different

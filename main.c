@@ -15,8 +15,6 @@
 #include "ide.h"
 #include "math.h"
 
-#define DEBUG
-
 #if defined(DEBUG)
 static void render_debug(uint32_t render_time, uint8_t ide_status)
 {
@@ -41,7 +39,7 @@ static void render_debug(uint32_t render_time, uint8_t ide_status)
 {
         video_init();
         sound_init();
-        uint8_t ide_status = ide_init();
+        [[maybe_unused]] uint8_t ide_status = ide_init();
         time_init();
         srand(ticks());
 
