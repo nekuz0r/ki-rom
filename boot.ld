@@ -35,7 +35,7 @@ SECTIONS {
         _edata = .;
     } > sram AT > rom
 
-    .bss ORIGIN(sram) + 0x200 + SIZEOF(.data) (NOLOAD) : ALIGN(8) {
+    .bss ALIGN(8) (NOLOAD) : {
         _sbss = .;
         *(.sbss);
         *(.bss);
