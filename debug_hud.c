@@ -177,6 +177,38 @@ static void hud_draw_fps(void)
     print_str(" FPS");
 }
 
+static void hud_draw_plot(void)
+{
+    // Dashed, because the top of the plot is the frame deadline rather than a
+    // gridline: a bar touching it has used the whole budget.
+    for (uint16_t x = HUD_IN_X0; x <= HUD_IN_X1; x += 2)
+    {
+        draw_fill(x, HUD_BUDGET_Y, x, HUD_BUDGET_Y, HUD_GRID);
+    }
+
+    draw_horizontal_line(HUD_IN_X0, HUD_BASE_Y, HUD_BUCKETS, HUD_BORDER);
+
+    for (uint8_t i = 0; i < HUD_BUCKETS; i++)
+    {
+        // Oldest on the left. head -- the bucket still filling -- is the
+        // rightmost column, so the newest bar moves every frame rather than
+        // twice a second.
+        const uint16_t us = hi[(head + 1 + i) % HUD_BUCKETS];
+        if (us == 0)
+        {
+            continue;
+        }
+
+        // Fixed scale against the budget, so a height means the same thing on
+        // every frame. Anything over the deadline clamps to full height and is
+        // already red by way of hud_color().
+        uint16_t h = (uint16_t)(((uint32_t)MIN(us, HUD_BUDGET_US) * HUD_PLOT_H) / HUD_BUDGET_US);
+        h = MAX(h, 1);
+
+        draw_fill(HUD_IN_X0 + i, HUD_PLOT_Y1 - h + 1, HUD_IN_X0 + i, HUD_PLOT_Y1, hud_color(us));
+    }
+}
+
 static void hud_draw_range(void)
 {
     uint16_t vmin = 0xFFFF;
@@ -221,6 +253,7 @@ void debug_hud_render(uint32_t render_us)
 
     hud_draw_card();
     hud_draw_fps();
+    hud_draw_plot();
     hud_draw_range();
 }
 
