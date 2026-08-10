@@ -7,7 +7,6 @@
 
 #if defined(DEBUG)
 
-#include <stdbool.h>
 #include "draw.h"
 #include "print.h"
 #include "time.h"
@@ -110,6 +109,16 @@ static void print_ms(uint32_t us)
 
 static void hud_sample(uint32_t render_us, uint64_t now_ms)
 {
+    // now_ms - bucket_start_ms is unsigned, so a clock that ever went backwards
+    // would underflow it and spin the advance loop below ~2^55 times with no
+    // wdt_reset() in reach. Not reachable today: ticks() is monotone and a reset
+    // re-clears .bss before this runs. Nothing states either as a contract, so
+    // re-anchor instead of trusting them.
+    if (started && (now_ms < bucket_start_ms))
+    {
+        started = false;
+    }
+
     if (!started)
     {
         // millis() is not zero-based -- time_init() seeds the accumulator from
@@ -186,7 +195,7 @@ static void hud_draw_plot(void)
         draw_fill(x, HUD_BUDGET_Y, x, HUD_BUDGET_Y, HUD_GRID);
     }
 
-    draw_horizontal_line(HUD_IN_X0, HUD_BASE_Y, HUD_BUCKETS, HUD_BORDER);
+    draw_horizontal_line(HUD_IN_X0, HUD_BASE_Y, HUD_IN_X1 - HUD_IN_X0 + 1, HUD_BORDER);
 
     for (uint8_t i = 0; i < HUD_BUCKETS; i++)
     {
@@ -250,6 +259,11 @@ static void hud_draw_range(void)
 void debug_hud_render(uint32_t render_us)
 {
     hud_sample(render_us, millis());
+
+    // print.c's scale is a sticky global. Every width on this card is computed for
+    // scale 1, and putchar_'s scaled path does not clip, so inheriting a scale that
+    // a view happened to leave behind would run the range row off the screen.
+    set_text_scale(1);
 
     hud_draw_card();
     hud_draw_fps();

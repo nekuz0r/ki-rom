@@ -12,12 +12,22 @@ BOOT_VIEW = view_main
 # were the other extreme, a commented-out fragment of a recipe line edited by hand.
 #
 # Object names carry BOARD and ROM but neither of these, so flipping either one
-# does not invalidate the objects built with the other setting: changing DEBUG or
-# MULTIBOOT needs a `make clean`.
+# does not by itself tell make the objects are stale. FLAGS_STAMP (defined
+# further down) makes the objects depend on the flag values, so switching either
+# one rebuilds what it needs to without a manual `make clean`.
 DEBUG ?= 1
 MULTIBOOT ?= 0
 DEBUG_FLAGS = $(if $(filter 1,$(DEBUG)),-DDEBUG)
 MULTIBOOT_FLAGS = $(if $(filter 1,$(MULTIBOOT)),-DHDD_2IN1 -DROM_2IN1)
+
+# ?= reads the environment, and DEBUG is a name people export in shell profiles.
+# Without this, `DEBUG=true` is silently indistinguishable from `DEBUG=0`.
+ifneq ($(filter-out 0 1,$(DEBUG)),)
+$(error DEBUG must be 0 or 1, got "$(DEBUG)")
+endif
+ifneq ($(filter-out 0 1,$(MULTIBOOT)),)
+$(error MULTIBOOT must be 0 or 1, got "$(MULTIBOOT)")
+endif
 
 # Without this, an interrupted or failing recipe leaves its half-written target
 # on disk. That is actively dangerous for the .zbin rules, which "cp" the raw
@@ -79,7 +89,20 @@ ${BOOT_VIEW_STAMP}: force
 
 build/${BOARD}-${ROM}-start.o: ${BOOT_VIEW_STAMP}
 
-build/${BOARD}-${ROM}-%.o: %.c
+# Same problem as BOOT_VIEW above, one level worse. DEBUG and MULTIBOOT arrive on
+# the command line or from the environment, so nothing on disk changes when they
+# do and the objects -- named for BOARD and ROM alone -- keep whatever flags they
+# were first built with. The .elf rule's prerequisites include .PHONY targets, so
+# the link re-runs regardless and the build cheerfully emits a fresh .u98 built
+# from the old flags: no error, no warning, wrong ROM. A comment saying "run make
+# clean" is not enough for something that ships.
+FLAGS_STAMP = build/${BOARD}-${ROM}-flags.stamp
+
+${FLAGS_STAMP}: force
+	@mkdir -p $(@D)
+	@echo '${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}' | cmp -s - $@ || echo '${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}' > $@
+
+build/${BOARD}-${ROM}-%.o: %.c ${FLAGS_STAMP}
 	mkdir -p $(@D)
 	$(CC) -MMD -MP -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} ${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}
 # -mstrict-align
