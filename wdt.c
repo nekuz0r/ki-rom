@@ -7,5 +7,5 @@
 
 void wdt_reset(void)
 {
-    asm volatile("lw $0,%[addr]" : : [addr] "i"(&gIO.dipSwitch));
+    WDT_KICK();
 }
