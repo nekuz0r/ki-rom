@@ -25,16 +25,20 @@
 
 RAMCODE_FN void bootrom_swap(const uint8_t bank)
 {
-    // The two paths below that return -- pre-command timeout and an aborted
-    // command -- must leave IE as they found it, per interrupts.h's
-    // contract. Success and a post-command timeout both end by jumping into
-    // a reset vector instead of returning, so neither restores.
+    // The two paths below that return -- a pre-command timeout, and a command
+    // that aborted or is stuck waiting for data -- must leave IE as they
+    // found it, per interrupts.h's contract. Success and a post-command
+    // timeout both end by jumping into a reset vector instead of returning,
+    // so neither restores.
     const uint32_t saved = interrupts_disable();
 
-    // Wait for the device to be able to accept a command: !BSY && DRDY. Same
-    // test as ide.c:20.
+    // Wait for the device to be able to accept a command: !BSY && DRDY &&
+    // !DRQ. The BSY/DRDY half is the same test as ide.c:20; DRQ is added
+    // because a device still mid PIO transfer from an earlier command is not
+    // ready for a new one, and failing here on a stale DRQ is what makes the
+    // post-command DRQ test below unambiguous -- any DRQ it sees is new.
     for (uint32_t spin = BOOTROM_SPINS;
-         ((gIDEControl.alternateStatus ^ IDE_STATUS_DRDY) & (IDE_STATUS_BSY | IDE_STATUS_DRDY)) != 0;
+         ((gIDEControl.alternateStatus ^ IDE_STATUS_DRDY) & (IDE_STATUS_BSY | IDE_STATUS_DRDY | IDE_STATUS_DRQ)) != 0;
          spin--)
     {
         WDT_KICK();
@@ -77,15 +81,18 @@ RAMCODE_FN void bootrom_swap(const uint8_t bank)
         }
     }
 
-    // 0xF1 is not a free vendor opcode: from ATA-3 on it is SECURITY SET
-    // PASSWORD, a PIO data-out command. A drive with no bank selector but
-    // that does implement Security clears BSY with DRQ set and ERR clear,
-    // waiting for a 512-byte password block that this code never sends. A
-    // test that looked only at ERR would read that as a completed swap and
-    // jump into a bank that never moved. DRQ never sets on switcher hardware
-    // -- the switcher consumes 0xF1 before any drive sees it -- so testing it
-    // here costs nothing there and is the only thing standing between this
-    // command and SECURITY SET PASSWORD everywhere else.
+    // A bank switch moves no data, so a device that clears BSY with DRQ set
+    // is asking for a PIO transfer -- proof it did not read this as a bank
+    // switch, whatever the opcode means to it. DRQ never sets on switcher
+    // hardware -- the switcher consumes the command before any drive sees it
+    // -- so testing it here costs nothing there.
+    //
+    // Concretely, on today's opcode: 0xF1 is not a free vendor code but, from
+    // ATA-3 on, SECURITY SET PASSWORD, a PIO data-out command. A drive with no
+    // bank selector but that does implement Security clears BSY with DRQ set
+    // and ERR clear, waiting for a 512-byte password block that this code
+    // never sends. A test that looked only at ERR would read that as a
+    // completed swap and jump into a bank that never moved.
     if (!timed_out && (status & (IDE_STATUS_ERR | IDE_STATUS_DRQ)) != 0)
     {
         // Aborted, or stuck waiting for data that is never coming: either way

@@ -23,22 +23,27 @@ C_SOURCES = $(wildcard *.c libs/umm_malloc/*.c)
 C_OBJS = $(C_SOURCES:%.c=build/${BOARD}-${ROM}-%.o)
 DEPS = $(C_OBJS:.o=.d)
 
-# rom depends on the .elf as a real file, not on check-ramcode as a phony
-# target: check-ramcode itself needs to build that same .elf, and a phony-to-
-# phony dependency in the other direction would make the two circular. Routing
-# both through the file lets each run the check exactly once from its own
-# recipe below, whether reached via `rom` or invoked standalone.
+# rom's own prerequisites are the two output files below, not the check
+# itself: the check lives in the .elf rule's recipe, where it runs once,
+# after linking and before objcopy can turn a bad .elf into a flashable
+# .u98. Reaching it via `rom`, `roms`, or `check-ramcode` standalone all land
+# on that same recipe.
 .PHONY: rom
-rom: build/${BOARD}-${ROM}.elf
+rom: output/${BOARD}-${ROM}.u98 output/${BOARD}-${ROM}.txt
+
+# The check disassembles code, not a raw dump, so it needs the .elf rather
+# than the .u98 -- and it runs here, between the link and the objcopy/objdump
+# below, so a failing build never produces a flashable output.
+build/${BOARD}-${ROM}.elf: tools images gamerom ${ASM_OBJS} ${C_OBJS}
+	$(LD) -Tboot.ld -G 0 --no-undefined -o build/${BOARD}-${ROM}.elf ${ASM_OBJS} ${C_OBJS}
 	OBJDUMP=$(OBJDUMP) tools/check-ramcode.sh build/${BOARD}-${ROM}.elf
 
-# Grouped target (&:, GNU make >= 4.3): ld, objcopy and objdump run once and
-# produce all three files together. A plain multi-target rule leaves make free
-# to treat them as independent under `make -j`, which can run this recipe more
-# than once for the same build and race the two writes to the .elf.
-build/${BOARD}-${ROM}.elf output/${BOARD}-${ROM}.u98 output/${BOARD}-${ROM}.txt &: tools images gamerom ${ASM_OBJS} ${C_OBJS}
+# Grouped target (&:, GNU make >= 4.3): objcopy and objdump run once and
+# produce both files together. A plain multi-target rule leaves make free to
+# treat them as independent under `make -j`, which can run this recipe more
+# than once for the same build.
+output/${BOARD}-${ROM}.u98 output/${BOARD}-${ROM}.txt &: build/${BOARD}-${ROM}.elf
 	mkdir -p output
-	$(LD) -Tboot.ld -G 0 --no-undefined -o build/${BOARD}-${ROM}.elf ${ASM_OBJS} ${C_OBJS}
 	$(OBJCOPY) -O binary build/${BOARD}-${ROM}.elf output/${BOARD}-${ROM}.u98
 	$(OBJDUMP) -D output/${BOARD}-${ROM}.u98 -b binary -mmips -M hex > output/${BOARD}-${ROM}.txt
 
@@ -69,12 +74,11 @@ build/${BOARD}-${ROM}-%.o: %.c
 
 # A .ramcode function keeps running while the ROM window holds a different
 # image, so a single reach back into ROM is fatal and nothing in the toolchain
-# catches it. This is that check -- `rom` above already runs it against every
-# build; this target exists so it can also be run standalone against an .elf
-# that is already built (or built here, if it is not).
+# catches it. This is that check -- the .elf rule above already runs it
+# against every build; this target exists so the same check can be invoked
+# standalone, without going on to produce a .u98.
 .PHONY: check-ramcode
 check-ramcode: build/${BOARD}-${ROM}.elf
-	OBJDUMP=$(OBJDUMP) tools/check-ramcode.sh build/${BOARD}-${ROM}.elf
 
 .PHONY: check-ramcode-all
 check-ramcode-all:
@@ -95,9 +99,10 @@ ROM_ZBIN = $(ROM_BIN:.bin=.zbin)
 gamerom: ${ROM_ZBIN}
 
 # The order-only prerequisites on the asset and segment rules below exist for
-# the same reason as this one: `rom:` lists `tools` before the targets that
-# invoke them, and under `make -j` that ordering means nothing. Without them a
-# recipe can run a tool binary while the `tools` target is still linking it.
+# the same reason as this one: the .elf rule above lists `tools` before the
+# targets that invoke them, and under `make -j` that ordering means nothing.
+# Without them a recipe can run a tool binary while the `tools` target is
+# still linking it.
 #
 # Grouped target (&:, GNU make >= 4.3): one invocation of kipack unpack
 # produces all six files. With a normal pattern rule make treats each output

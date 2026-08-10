@@ -225,10 +225,11 @@ static const uint8_t banks[BOOTSELECT_ENTRIES] = {
 
     if (bank != BOOTROM_BANK_SELF)
     {
-        // Returns only when the bank is provably unchanged -- the device
-        // never went ready and no command was issued, or it answered the
-        // command in a way that rules out a completed switch. Either way the
-        // mapped bank is still ours and falling through is safe.
+        // Returns only when the bank is unchanged under the hardware model
+        // bootrom.c documents -- the device never went ready and no command
+        // was issued, or it answered in a way that means it never switched.
+        // Either way the mapped bank is still ours and falling through is
+        // safe.
         bootrom_swap(bank);
     }
 

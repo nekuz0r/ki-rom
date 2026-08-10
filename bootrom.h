@@ -29,10 +29,10 @@
 
 /**
  * Maps `bank` into the ROM window and enters the newly mapped image through its
- * own reset vector. Returns only when the bank is provably unchanged, so the
- * caller can fall back to booting this image -- any outcome where the bank
- * might already have moved is resolved by resetting into whichever image
- * ended up mapped, never by returning.
+ * own reset vector. Returns only when the bank is unchanged under the hardware
+ * model bootrom.c documents -- so the caller can fall back to booting this
+ * image. Any outcome where the bank might already have moved is resolved by
+ * resetting into whichever image ended up mapped, never by returning.
  *
  * far: the caller is in ROM at 0x9FCxxxxx and this lives in SRAM at 0x8000xxxx.
  * jal encodes only the low 28 bits of its target and keeps the PC's top four,
