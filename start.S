@@ -3,6 +3,13 @@
 
 #include "regdef.h"
 
+# Which view main() is handed on reset. Overridden from the Makefile via
+# BOOT_VIEW so the three boot-picker renderings can be tried on hardware
+# without editing a source file: make rom BOOT_VIEW=view_bootselect_2
+#ifndef KI_BOOT_VIEW
+#define KI_BOOT_VIEW view_main
+#endif
+
 .text
 .set noreorder
 .set nomacro
@@ -43,7 +50,7 @@ _exception_handler:
     .set macro
     li v0,0x0
     mtc0 v0,CP0_COUNT
-    la a0,view_main
+    la a0,KI_BOOT_VIEW
     j _reset
     nop
 

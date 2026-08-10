@@ -55,7 +55,7 @@ DETOUR_FN static void interrupt_handler_hooked(void)
 #if defined(ROM_2IN1)
         &view_bootselect
 #else
-        &view_main
+        &view_bootselect
 #endif
     );
 }

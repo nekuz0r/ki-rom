@@ -15,17 +15,19 @@
 #include "ide.h"
 #include "math.h"
 
-// #define DEBUG
+#define DEBUG
 
 #if defined(DEBUG)
-static void render_debug(uint32_t render_time)
+static void render_debug(uint32_t render_time, uint8_t ide_status)
 {
         static uint32_t render_time_max = 0;
         render_time_max = MAX(render_time, render_time_max);
 
         set_text_color(0x0000, 0x7FF);
-        draw_box(0, 208, 150, 231);
+        draw_box(0, 196, 150, 231);
         set_text_color(0x0000, 0xAAAA);
+        print_xy(2, 198, "ideStatus = ");
+        print_hex(ide_status, 8);
         print_xy(2, 210, "renderTime = ");
         print_dec(render_time);
         print_str(" us");
@@ -39,7 +41,7 @@ static void render_debug(uint32_t render_time)
 {
         video_init();
         sound_init();
-        // ide_init();
+        uint8_t ide_status = ide_init();
         time_init();
         srand(ticks());
 
@@ -56,7 +58,7 @@ static void render_debug(uint32_t render_time)
 
 #if defined(DEBUG)
                 render_time = clock() - render_time;
-                render_debug(render_time);
+                render_debug(render_time, ide_status);
 #endif
                 video_vsync_wait();
                 video_swap_buffers();

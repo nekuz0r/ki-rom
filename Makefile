@@ -4,6 +4,7 @@ OBJDUMP = mipsel-linux-gnu-objdump
 OBJCOPY = mipsel-linux-gnu-objcopy
 BOARD = 19489
 ROM = ki-l15d
+BOOT_VIEW = view_main
 
 # Without this, an interrupted or failing recipe leaves its half-written target
 # on disk. That is actively dangerous for the .zbin rules, which "cp" the raw
@@ -31,7 +32,22 @@ rom: tools images gamerom ${ASM_OBJS} ${C_OBJS}
 
 build/${BOARD}-${ROM}-%.o: %.S
 	mkdir -p $(@D)
-	$(CC) -mplt -G 0 -mno-abicalls -mabi=o64 -c -EL -march=r4600 $< -o $@ -I. -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM}
+	$(CC) -mplt -G 0 -mno-abicalls -mabi=o64 -c -EL -march=r4600 $< -o $@ -I. -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} -DKI_BOOT_VIEW=${BOOT_VIEW}
+
+# BOOT_VIEW only ever arrives on the command line, so nothing on disk changes
+# when it does and start.o would keep whatever view it was first built with.
+# This stamp holds the current value and is rewritten only when it differs, so
+# it is a prerequisite that goes stale exactly when the setting does.
+BOOT_VIEW_STAMP = build/${BOARD}-${ROM}-bootview.stamp
+
+.PHONY: force
+force:
+
+${BOOT_VIEW_STAMP}: force
+	@mkdir -p $(@D)
+	@echo '${BOOT_VIEW}' | cmp -s - $@ || echo '${BOOT_VIEW}' > $@
+
+build/${BOARD}-${ROM}-start.o: ${BOOT_VIEW_STAMP}
 
 build/${BOARD}-${ROM}-%.o: %.c
 	mkdir -p $(@D)

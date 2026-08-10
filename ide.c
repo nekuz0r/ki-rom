@@ -53,7 +53,7 @@ uint8_t ide_init(void)
     gIDE.sectorCount = 0x28; // Number of sector per track
     gIDE.device = 0xd;       // Number of head - 1 per cylinder
     gIDE.command = 0x91;     // Initialize device parameters
-    return ide_ack() & 0x21; // Return DRDY and ERR bits
+    return ide_ack() & 0x61; // Return DRDY and ERR bits
 }
 
 void ide_seek(uint32_t lba, uint8_t count)

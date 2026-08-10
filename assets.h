@@ -41,10 +41,25 @@ extern uint8_t zasset_ki2_tusk[];
 extern uint8_t zasset_rare_logo[];
 extern uint8_t zasset_nintendo_logo[];
 
+#define ZASSET_CHARACTERS (11)
+
 extern uint8_t *zasset_ki1_characters[];
 extern uint8_t *zasset_ki2_characters[];
 
+// Parallel to the arrays above: index i names the fighter that index i draws.
+extern const char *zasset_ki1_character_names[];
+extern const char *zasset_ki2_character_names[];
+
+#define ZROM_SEGMENTS (3)
+
 void *zasset_load(const void *ptr);
+
+/**
+ * One segment at a time. Decompressing all three in a single call blocks for
+ * seconds with nothing on screen changing; a view that wants to show progress
+ * calls this once per frame instead.
+ */
+void zrom_load_segment(const uint8_t index);
 void zrom_load(void);
 
 #endif

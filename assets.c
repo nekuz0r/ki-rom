@@ -9,7 +9,7 @@
 #include "mem.h"
 #include "lzss.h"
 
-extern zrom_t zroms[3];
+extern zrom_t zroms[ZROM_SEGMENTS];
 
 uint8_t *zasset_ki1_characters[] = {
     zasset_ki1_cinder,
@@ -39,6 +39,39 @@ uint8_t *zasset_ki2_characters[] = {
     zasset_ki2_tusk,
 };
 
+const char *zasset_ki1_character_names[] = {
+    "CINDER",
+    "COMBO",
+    "EYEDOL",
+    "FULGORE",
+    "GLACIUS",
+    "JAGO",
+    "ORCHID",
+    "RIPTOR",
+    "SABREWULF",
+    "SPINAL",
+    "THUNDER",
+};
+
+const char *zasset_ki2_character_names[] = {
+    "COMBO",
+    "FULGORE",
+    "GARGOS",
+    "GLACIUS",
+    "JAGO",
+    "KIM WU",
+    "MAYA",
+    "ORCHID",
+    "SABREWULF",
+    "SPINAL",
+    "TUSK",
+};
+
+static_assert(sizeof(zasset_ki1_characters) / sizeof(zasset_ki1_characters[0]) == ZASSET_CHARACTERS);
+static_assert(sizeof(zasset_ki2_characters) / sizeof(zasset_ki2_characters[0]) == ZASSET_CHARACTERS);
+static_assert(sizeof(zasset_ki1_character_names) / sizeof(zasset_ki1_character_names[0]) == ZASSET_CHARACTERS);
+static_assert(sizeof(zasset_ki2_character_names) / sizeof(zasset_ki2_character_names[0]) == ZASSET_CHARACTERS);
+
 void *zasset_load(const void *ptr)
 {
     void *out = malloc(lzss_decompressed_size(ptr));
@@ -49,9 +82,15 @@ void *zasset_load(const void *ptr)
     return out;
 }
 
+void zrom_load_segment(const uint8_t index)
+{
+    lzss_decompress(zroms[index].data, zroms[index].lma + 0x80000000UL);
+}
+
 void zrom_load(void)
 {
-    lzss_decompress(zroms[0].data, zroms[0].lma + 0x80000000UL);
-    lzss_decompress(zroms[1].data, zroms[1].lma + 0x80000000UL);
-    lzss_decompress(zroms[2].data, zroms[2].lma + 0x80000000UL);
+    for (uint8_t i = 0; i < ZROM_SEGMENTS; i++)
+    {
+        zrom_load_segment(i);
+    }
 }

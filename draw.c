@@ -161,6 +161,92 @@ void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t
 #endif
 }
 
+void draw_image_ex(const int16_t x, const int16_t y, const image_t *img, uint16_t chroma_key, const blit_t *opt)
+{
+    const int32_t zoom = (opt->zoom < 2) ? 1 : (int32_t)opt->zoom;
+    const int32_t srcw = (int32_t)img->width;
+    const int32_t srch = (opt->rows != 0 && opt->rows < img->height) ? (int32_t)opt->rows : (int32_t)img->height;
+    const uint16_t *const pixels = (const uint16_t *)((const uint8_t *)img + sizeof(image_t));
+
+    // Clip in destination space first. video_get_ptr() has no bound check, so an
+    // unclipped blit at a negative x does not draw off screen -- it converts to a
+    // huge unsigned offset and scribbles over SRAM.
+    int32_t dx0 = x, dy0 = y;
+    int32_t dx1 = x + srcw * zoom;
+    int32_t dy1 = y + srch * zoom;
+    if (dx0 < 0)
+    {
+        dx0 = 0;
+    }
+    if (dy0 < 0)
+    {
+        dy0 = 0;
+    }
+    if (dx1 > 320)
+    {
+        dx1 = 320;
+    }
+    if (dy1 > 240)
+    {
+        dy1 = 240;
+    }
+    if (dx0 >= dx1 || dy0 >= dy1)
+    {
+        return;
+    }
+
+    // Map the clipped destination rectangle back to the source pixels that touch
+    // it. Only the first and last of those can be partially visible, but clamping
+    // every block costs two compares and keeps the two cases in one loop.
+    const int32_t sx0 = (dx0 - x) / zoom;
+    const int32_t sx1 = ((dx1 - 1 - x) / zoom) + 1;
+    const int32_t sy0 = (dy0 - y) / zoom;
+    const int32_t sy1 = ((dy1 - 1 - y) / zoom) + 1;
+
+    const bool flatten = opt->flatten;
+    const bool shade = (opt->shade != 0 && opt->shade != 8);
+
+    for (int32_t sy = sy0; sy < sy1; sy++)
+    {
+        const int32_t row = opt->flip_y ? ((int32_t)img->height - 1 - sy) : sy;
+        const uint16_t *const line = pixels + (row * srcw);
+
+        const int32_t by = y + (sy * zoom);
+        const int32_t ry0 = (by < dy0) ? dy0 : by;
+        const int32_t ry1 = (by + zoom > dy1) ? dy1 : (by + zoom);
+
+        for (int32_t sx = sx0; sx < sx1; sx++)
+        {
+            uint16_t color = line[opt->mirror ? (srcw - 1 - sx) : sx];
+            if (color == chroma_key)
+            {
+                continue;
+            }
+            if (flatten)
+            {
+                color = opt->flat;
+            }
+            else if (shade)
+            {
+                color = color_shade(color, opt->shade);
+            }
+
+            const int32_t bx = x + (sx * zoom);
+            const int32_t rx0 = (bx < dx0) ? dx0 : bx;
+            const int32_t rx1 = (bx + zoom > dx1) ? dx1 : (bx + zoom);
+
+            for (int32_t py = ry0; py < ry1; py++)
+            {
+                uint16_t *pixel = video_get_ptr(rx0, py);
+                for (int32_t px = rx0; px < rx1; px++)
+                {
+                    *pixel++ = color;
+                }
+            }
+        }
+    }
+}
+
 void draw_point(const uint16_t x, const uint16_t y)
 {
     uint16_t *pixel = video_get_ptr(x, y);
@@ -279,7 +365,48 @@ void draw_box(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uin
     }
 }
 
-uint16_t color_fade_in_out(uint16_t from, uint16_t to, uint8_t speed)
+void draw_fill(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1, uint16_t color)
+{
+    if (x1 < x0 || y1 < y0)
+    {
+        return;
+    }
+
+    for (uint16_t y = y0; y <= y1; y++)
+    {
+        draw_horizontal_line(x0, y, x1 - x0 + 1, color);
+    }
+}
+
+void draw_gradient(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1, uint16_t top, uint16_t bottom)
+{
+    if (x1 < x0 || y1 < y0)
+    {
+        return;
+    }
+
+    // One ramp step per scanline, so the whole gradient is just draw_fill() with
+    // a colour that walks. A single-row gradient is its top colour.
+    const uint16_t span = (y1 > y0) ? (y1 - y0) : 1;
+    for (uint16_t y = y0; y <= y1; y++)
+    {
+        const uint8_t t = (uint8_t)(((uint32_t)(y - y0) * 255) / span);
+        draw_horizontal_line(x0, y, x1 - x0 + 1, color_lerp(top, bottom, t));
+    }
+}
+
+uint16_t color_shade(uint16_t color, uint8_t shade)
+{
+    uint16_t r = ((color & 0x1F) * shade) >> 3;
+    uint16_t g = (((color >> 5) & 0x1F) * shade) >> 3;
+    uint16_t b = (((color >> 10) & 0x1F) * shade) >> 3;
+
+    // shade > 8 brightens, and a channel that saturates must clamp rather than
+    // wrap into the next one.
+    return RGB555(MIN(r, 31), MIN(g, 31), MIN(b, 31));
+}
+
+uint16_t color_lerp(uint16_t from, uint16_t to, uint8_t t)
 {
     uint8_t ra = from & 0x1F;
     uint8_t rb = to & 0x1F;
@@ -288,6 +415,15 @@ uint16_t color_fade_in_out(uint16_t from, uint16_t to, uint8_t speed)
     uint8_t ba = (from >> 10) & 0x1F;
     uint8_t bb = (to >> 10) & 0x1F;
 
+    uint8_t r = ra + (((uint32_t)t * (int16_t)(rb - ra)) >> 8);
+    uint8_t g = ga + (((uint32_t)t * (int16_t)(gb - ga)) >> 8);
+    uint8_t b = ba + (((uint32_t)t * (int16_t)(bb - ba)) >> 8);
+
+    return RGB555(r, g, b);
+}
+
+uint16_t color_fade_in_out(uint16_t from, uint16_t to, uint8_t speed)
+{
     uint32_t res = (60 * speed);
     uint32_t pos = frame_counter % res;
     uint32_t half = res >> 1;
@@ -299,9 +435,5 @@ uint16_t color_fade_in_out(uint16_t from, uint16_t to, uint8_t speed)
         t_fixed = 255;
     }
 
-    uint8_t r = ra + ((t_fixed * (int16_t)(rb - ra)) >> 8);
-    uint8_t g = ga + ((t_fixed * (int16_t)(gb - ga)) >> 8);
-    uint8_t b = ba + ((t_fixed * (int16_t)(bb - ba)) >> 8);
-
-    return r | (g << 5) | (b << 10);
+    return color_lerp(from, to, (uint8_t)t_fixed);
 }
