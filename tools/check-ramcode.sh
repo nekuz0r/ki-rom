@@ -104,8 +104,10 @@ done
 # the input-section identity is gone by the time the loop above runs. The
 # object files still carry it, so look there instead.
 objs="${ELF%.elf}-*.o"
+obj_matched=0
 for obj in $objs; do
     [ -f "$obj" ] || continue
+    obj_matched=1
 
     tagged=$("$OBJDUMP" -t "$obj" | awk 'NF >= 3 && $(NF - 2) == ".ramcode" && $(NF - 1) != "00000000" { print $NF }')
     for sym in $tagged; do
@@ -119,5 +121,14 @@ for obj in $objs; do
         fi
     done
 done
+
+# An empty glob is not "nothing to check" -- it means this reverse check ran
+# with no object files to look at and verified nothing while saying nothing.
+# That is the same silent-pass failure mode Finding 2 fixed, so it must fail
+# loudly and name the cause rather than let the script fall through to "ok".
+if [ "$obj_matched" -eq 0 ]; then
+    echo "FAIL $ELF: no object files matched $objs: reverse .ramcode check ran against zero objects" >&2
+    fail=1
+fi
 
 exit "$fail"
