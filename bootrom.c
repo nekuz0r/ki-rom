@@ -24,10 +24,10 @@
 
 RAMCODE_FN bool bootrom_swap(const uint8_t bank)
 {
-    // The three failure paths below return and must leave IE as they found
-    // it, per interrupts.h's contract. The success path never returns -- it
-    // jumps into the newly mapped image's reset vector -- so there is
-    // nothing to restore there.
+    // The two paths below that return -- pre-command timeout and an aborted
+    // command -- must leave IE as they found it, per interrupts.h's
+    // contract. Success and a post-command timeout both end by jumping into
+    // a reset vector instead of returning, so neither restores.
     const uint32_t saved = interrupts_disable();
 
     // Wait for the device to be able to accept a command: !BSY && DRDY. Same
@@ -39,6 +39,8 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
         WDT_KICK();
         if (spin == 0)
         {
+            // No command has been issued yet, so the bank is still whatever
+            // it was on entry: returning into this image is safe.
             interrupts_restore(saved);
             return false;
         }
@@ -51,6 +53,7 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
     // anything. ide.c never needed this because it waits on the IDE interrupt.
     udelay(1);
 
+    bool timed_out = false;
     uint32_t status = 0;
     for (uint32_t spin = BOOTROM_SPINS;; spin--)
     {
@@ -62,22 +65,39 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
         }
         if (spin == 0)
         {
-            interrupts_restore(saved);
-            return false;
+            // The command was already issued, so the bank may already have
+            // flipped or be mid-flip: returning here would execute whatever
+            // bytes now sit at the caller's ROM address in a different
+            // image. Reset instead, below -- it is correct whichever bank
+            // ended up mapped, because both images share the reset vector
+            // layout.
+            timed_out = true;
+            break;
         }
     }
 
-    if ((status & IDE_STATUS_ERR) != 0)
+    if (!timed_out && (status & IDE_STATUS_ERR) != 0)
     {
         // Aborted: the device has no bank selector. The ROM window still holds
         // our own image, so returning into it is safe.
+        //
+        // The command still raised INTRQ, and alternateStatus above is
+        // defined not to clear it -- only a read of the real Status register
+        // does. Left unacknowledged, the next command that waits on Cause's
+        // IP bit for its own completion would see this stale assertion and
+        // return immediately, before its data is ready. ide_ack() (ide.c:24)
+        // always ends on this same read for exactly that reason; this
+        // command has no ide_ack() call of its own, so it is done here by
+        // hand.
+        (void)gIDE.status;
         interrupts_restore(saved);
         return false;
     }
 
     /**
-     * The ROM window now holds a different image. Nothing below may be fetched
-     * from it, and there is no way back.
+     * Reached on success, or on a post-command timeout whose outcome is
+     * unknown. Either way the ROM window may now hold a different image, and
+     * there is no way back: nothing below may be fetched from it.
      *
      * Sweeps all 512 lines of both 16K 2-way primary caches by index, as
      * roms.S:42-51 does: 256 iterations covering way 0 at +0x0 and way 1 at
@@ -95,9 +115,9 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
 
     /**
      * jr, not j: j is limited to the 256MB region of the current PC, and the PC
-     * is in SRAM at 0x8000xxxx while the reset vector is at 0xBFC00000. The
-     * uncached address also means the fetch cannot be served by a cache line
-     * the sweep above just invalidated.
+     * is in SRAM at 0x8000xxxx while the reset vector is at 0xBFC00000. 0xBFC0
+     * is kseg1, so the fetch bypasses the I-cache entirely -- the jump lands
+     * correctly even if the sweep above were wrong.
      *
      * This enters the *new* image's reset handler, which runs its own
      * la a0,KI_BOOT_VIEW -- how the swapped-in ROM names its own boot view
