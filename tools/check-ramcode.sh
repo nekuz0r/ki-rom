@@ -77,8 +77,12 @@ for fn in $RAMCODE_FNS; do
         fi
 
         # Catches what the rule above cannot: a tail call compiled to
-        # "lui t9,0x9fc0; jr t9", and any load of a ROM address.
-        rom=$(echo "$dis" | grep -Ei '(\b9fc[0-9a-f]{5}\b|0x9fc0)' || true)
+        # "lui t9,0x9fc3; jr t9", and any load of a ROM address. A lui only
+        # ever prints the upper halfword (four hex digits), never the full
+        # 8-digit address, so this matches the whole 0x9fc prefix rather than
+        # trying to bound it exactly at 512K -- nothing valid in this image
+        # lives at 0x9fcXXXXX other than ROM.
+        rom=$(echo "$dis" | grep -Ei '(\b9fc[0-9a-f]{5}\b|0x9fc[0-9a-f]\b)' || true)
         if [ -n "$rom" ]; then
             echo "FAIL $ELF: $fn: references the ROM window:" >&2
             echo "$rom" >&2
@@ -91,6 +95,29 @@ for fn in $RAMCODE_FNS; do
     else
         fail=1
     fi
+done
+
+# Reverse check: every symbol GCC actually placed in a .ramcode input section
+# must be named in RAMCODE_FNS above, or a RAMCODE_FN function silently goes
+# unchecked -- the exact staleness the comment on RAMCODE_FNS warns about.
+# The linked ELF cannot answer this: boot.ld merges .ramcode into .data, so
+# the input-section identity is gone by the time the loop above runs. The
+# object files still carry it, so look there instead.
+objs="${ELF%.elf}-*.o"
+for obj in $objs; do
+    [ -f "$obj" ] || continue
+
+    tagged=$("$OBJDUMP" -t "$obj" | awk 'NF >= 3 && $(NF - 2) == ".ramcode" && $(NF - 1) != "00000000" { print $NF }')
+    for sym in $tagged; do
+        known=0
+        for fn in $RAMCODE_FNS; do
+            [ "$sym" = "$fn" ] && known=1 && break
+        done
+        if [ "$known" -eq 0 ]; then
+            echo "FAIL $ELF: $sym: tagged RAMCODE_FN in $obj but missing from RAMCODE_FNS" >&2
+            fail=1
+        fi
+    done
 done
 
 exit "$fail"
