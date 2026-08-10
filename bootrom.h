@@ -38,6 +38,6 @@
  * jal encodes only the low 28 bits of its target and keeps the PC's top four,
  * so a near call cannot reach across. Same reason view.h's _reset carries it.
  */
-bool bootrom_swap(uint8_t bank) __attribute__((far));
+void bootrom_swap(uint8_t bank) __attribute__((far));
 
 #endif

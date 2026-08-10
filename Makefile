@@ -23,8 +23,20 @@ C_SOURCES = $(wildcard *.c libs/umm_malloc/*.c)
 C_OBJS = $(C_SOURCES:%.c=build/${BOARD}-${ROM}-%.o)
 DEPS = $(C_OBJS:.o=.d)
 
+# rom depends on the .elf as a real file, not on check-ramcode as a phony
+# target: check-ramcode itself needs to build that same .elf, and a phony-to-
+# phony dependency in the other direction would make the two circular. Routing
+# both through the file lets each run the check exactly once from its own
+# recipe below, whether reached via `rom` or invoked standalone.
 .PHONY: rom
-rom: tools images gamerom ${ASM_OBJS} ${C_OBJS}
+rom: build/${BOARD}-${ROM}.elf
+	OBJDUMP=$(OBJDUMP) tools/check-ramcode.sh build/${BOARD}-${ROM}.elf
+
+# Grouped target (&:, GNU make >= 4.3): ld, objcopy and objdump run once and
+# produce all three files together. A plain multi-target rule leaves make free
+# to treat them as independent under `make -j`, which can run this recipe more
+# than once for the same build and race the two writes to the .elf.
+build/${BOARD}-${ROM}.elf output/${BOARD}-${ROM}.u98 output/${BOARD}-${ROM}.txt &: tools images gamerom ${ASM_OBJS} ${C_OBJS}
 	mkdir -p output
 	$(LD) -Tboot.ld -G 0 --no-undefined -o build/${BOARD}-${ROM}.elf ${ASM_OBJS} ${C_OBJS}
 	$(OBJCOPY) -O binary build/${BOARD}-${ROM}.elf output/${BOARD}-${ROM}.u98
@@ -57,9 +69,11 @@ build/${BOARD}-${ROM}-%.o: %.c
 
 # A .ramcode function keeps running while the ROM window holds a different
 # image, so a single reach back into ROM is fatal and nothing in the toolchain
-# catches it. This is that check.
+# catches it. This is that check -- `rom` above already runs it against every
+# build; this target exists so it can also be run standalone against an .elf
+# that is already built (or built here, if it is not).
 .PHONY: check-ramcode
-check-ramcode: rom
+check-ramcode: build/${BOARD}-${ROM}.elf
 	OBJDUMP=$(OBJDUMP) tools/check-ramcode.sh build/${BOARD}-${ROM}.elf
 
 .PHONY: check-ramcode-all

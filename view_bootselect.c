@@ -31,8 +31,6 @@
 #define SHADE_GHOST (2)
 #define SHADE_GHOST_UNSELECTED (1)
 
-extern void _reset(view_t *view) __attribute__((far));
-
 typedef struct
 {
     uint16_t key;    // Accent: frame, title and countdown all take it.
@@ -227,7 +225,9 @@ static const uint8_t banks[BOOTSELECT_ENTRIES] = {
 
     if (bank != BOOTROM_BANK_SELF)
     {
-        // Returns only when the device refused the command, in which case the
+        // Returns only when the bank is provably unchanged -- the device
+        // never went ready and no command was issued, or it answered the
+        // command in a way that rules out a completed switch. Either way the
         // mapped bank is still ours and falling through is safe.
         bootrom_swap(bank);
     }
@@ -270,6 +270,22 @@ static void load_pair(const uint8_t entry, uint8_t *const characters[], const ch
 static void load(void)
 {
     bootselect_reset(&state);
+
+    // bootselect_reset() always highlights KI1 -- correct for a soft-reset
+    // combo, which used to just re-enter this view. Now BOOTSELECT_EXPIRED
+    // issues an IDE command, so a KI2 cabinet whose operator triggers the
+    // combo and walks away would come back running KI1. Re-point the
+    // highlight at this image's own bank so an unattended timeout is a true
+    // no-op: same bank, no IDE command at all.
+    for (uint8_t entry = 0; entry < BOOTSELECT_ENTRIES; entry++)
+    {
+        if (banks[entry] == BOOTROM_BANK_SELF)
+        {
+            state.selected = entry;
+            break;
+        }
+    }
+
     load_pair(BOOTSELECT_KI1, zasset_ki1_characters, zasset_ki1_character_names);
     load_pair(BOOTSELECT_KI2, zasset_ki2_characters, zasset_ki2_character_names);
 }

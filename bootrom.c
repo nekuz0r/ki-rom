@@ -14,6 +14,7 @@
 
 #define IDE_STATUS_BSY (0x80)
 #define IDE_STATUS_DRDY (0x40)
+#define IDE_STATUS_DRQ (0x08)
 #define IDE_STATUS_ERR (0x01)
 
 #define IDE_CMD_SELECT_BANK (0xF1)
@@ -22,7 +23,7 @@
 // iteration, so exhausting it fails the swap instead of rebooting the board.
 #define BOOTROM_SPINS (0x5f0000)
 
-RAMCODE_FN bool bootrom_swap(const uint8_t bank)
+RAMCODE_FN void bootrom_swap(const uint8_t bank)
 {
     // The two paths below that return -- pre-command timeout and an aborted
     // command -- must leave IE as they found it, per interrupts.h's
@@ -42,7 +43,7 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
             // No command has been issued yet, so the bank is still whatever
             // it was on entry: returning into this image is safe.
             interrupts_restore(saved);
-            return false;
+            return;
         }
     }
 
@@ -76,10 +77,30 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
         }
     }
 
-    if (!timed_out && (status & IDE_STATUS_ERR) != 0)
+    // 0xF1 is not a free vendor opcode: from ATA-3 on it is SECURITY SET
+    // PASSWORD, a PIO data-out command. A drive with no bank selector but
+    // that does implement Security clears BSY with DRQ set and ERR clear,
+    // waiting for a 512-byte password block that this code never sends. A
+    // test that looked only at ERR would read that as a completed swap and
+    // jump into a bank that never moved. DRQ never sets on switcher hardware
+    // -- the switcher consumes 0xF1 before any drive sees it -- so testing it
+    // here costs nothing there and is the only thing standing between this
+    // command and SECURITY SET PASSWORD everywhere else.
+    if (!timed_out && (status & (IDE_STATUS_ERR | IDE_STATUS_DRQ)) != 0)
     {
-        // Aborted: the device has no bank selector. The ROM window still holds
-        // our own image, so returning into it is safe.
+        // Aborted, or stuck waiting for data that is never coming: either way
+        // the device did not switch banks, so the ROM window still holds our
+        // own image and returning into it is safe.
+        //
+        // That safety is only as good as the assumption that the switcher
+        // *consumes* 0xF1 rather than snooping it -- a device that answers
+        // here is a device the command reached, and on this hardware that
+        // only happens when nothing switched the bank. A switcher that
+        // instead snooped the bus, flipping the bank while also letting an
+        // attached drive answer, would break this: the bank could already be
+        // wrong by the time this path returns, and the caller would resume
+        // executing whatever now sits at its own ROM address in a different
+        // image -- a hang with no output and nothing to say why.
         //
         // The command still raised INTRQ, and alternateStatus above is
         // defined not to clear it -- only a read of the real Status register
@@ -91,13 +112,20 @@ RAMCODE_FN bool bootrom_swap(const uint8_t bank)
         // hand.
         (void)gIDE.status;
         interrupts_restore(saved);
-        return false;
+        return;
     }
 
     /**
      * Reached on success, or on a post-command timeout whose outcome is
      * unknown. Either way the ROM window may now hold a different image, and
      * there is no way back: nothing below may be fetched from it.
+     *
+     * Unlike the ERR path above, INTRQ is left unacknowledged here -- there is
+     * no ide_ack() call and no read of gIDE.status. That is safe only because
+     * whichever image now owns the reset vector runs ide_init() (ide.c:48)
+     * before it does anything else with the device, and ide_init() opens by
+     * asserting SRST, which clears a pending interrupt along with every other
+     * piece of state a stale INTRQ could poison.
      *
      * Sweeps all 512 lines of both 16K 2-way primary caches by index, as
      * roms.S:42-51 does: 256 iterations covering way 0 at +0x0 and way 1 at
