@@ -93,14 +93,19 @@ static uint16_t hud_color(uint32_t us)
     return HUD_GOOD;
 }
 
-// One decimal place. The digit count only changes across the 10ms boundary, so
-// the row does not reflow every frame the way the old overlay's raw microseconds
-// did.
+// One decimal below 10ms, where the tenths are what you are tuning against, and
+// whole milliseconds at or above it, where only the magnitude is. That caps the
+// range row at 9 characters -- "9.9-9.9ms", 55px -- inside the 60px content box.
+// Tenths throughout let "65.5-65.5ms" reach 67px and spill past the card border.
 static void print_ms(uint32_t us)
 {
     print_dec(us / 1000);
-    print_str(".");
-    print_dec((us % 1000) / 100);
+
+    if (us < 10000)
+    {
+        print_str(".");
+        print_dec((us % 1000) / 100);
+    }
 }
 
 static void hud_sample(uint32_t render_us, uint64_t now_ms)
