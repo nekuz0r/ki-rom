@@ -4,42 +4,25 @@
  */
 
 #include <stdint.h>
-#include "print.h"
 #include "video.h"
 #include "sound.h"
-#include "draw.h"
 #include "time.h"
 #include "wdt.h"
 #include "view.h"
 #include "rand.h"
 #include "ide.h"
-#include "math.h"
 
 #if defined(DEBUG)
-static void render_debug(uint32_t render_time, uint8_t ide_status)
-{
-        static uint32_t render_time_max = 0;
-        render_time_max = MAX(render_time, render_time_max);
-
-        set_text_color(0x0000, 0x7FF);
-        draw_box(0, 196, 150, 231);
-        set_text_color(0x0000, 0xAAAA);
-        print_xy(2, 198, "ideStatus = ");
-        print_hex(ide_status, 8);
-        print_xy(2, 210, "renderTime = ");
-        print_dec(render_time);
-        print_str(" us");
-        print_xy(2, 222, "maxRenderTime = ");
-        print_dec(render_time_max);
-        print_str(" us");
-}
+#include "debug_hud.h"
 #endif
 
 [[noreturn]] void main(view_t *view)
 {
         video_init();
         sound_init();
-        [[maybe_unused]] uint8_t ide_status = ide_init();
+        // The HUD no longer reports IDE status and nothing else here reads it, so
+        // the result is discarded rather than bound to a variable -Wall flags.
+        ide_init();
         time_init();
         srand(ticks());
 
@@ -48,15 +31,17 @@ static void render_debug(uint32_t render_time, uint8_t ide_status)
         while (1)
         {
 #if defined(DEBUG)
-                uint64_t render_time = clock();
+                uint64_t render_start = clock();
 #endif
                 wdt_reset();
 
                 view_current->render(frame_counter);
 
 #if defined(DEBUG)
-                render_time = clock() - render_time;
-                render_debug(render_time, ide_status);
+                // The HUD's own draw cost is deliberately outside the sample: the
+                // number is for tuning the view. If the HUD ever costs a frame it
+                // shows up as FPS falling to 30, not as inflated render time.
+                debug_hud_render((uint32_t)(clock() - render_start));
 #endif
                 video_vsync_wait();
                 video_swap_buffers();
