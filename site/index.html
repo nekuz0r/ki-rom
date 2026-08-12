@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Killer Instinct — Open Source Boot ROM</title>
+<meta name="description" content="Open source boot ROM for Killer Instinct 1 &amp; 2 arcade hardware. Boot from any IDE drive, on both board revisions, with runtime patches — plus KI1/KI2 multiboot in development.">
+<meta name="theme-color" content="#000821">
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="canonical" href="https://www.killer-instinct.net/">
+<meta property="og:title" content="Killer Instinct — Open Source Boot ROM">
+<meta property="og:description" content="Boot KI1 &amp; KI2 from any IDE drive, on both board revisions, with runtime patches — plus KI1/KI2 multiboot in development.">
+<meta property="og:image" content="https://www.killer-instinct.net/assets/video/poster.png">
+<meta property="og:url" content="https://www.killer-instinct.net/">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="site-nav__home" href="#top"><img src="assets/img/logo.png" alt="" height="16"><span class="px">KILLER-INSTINCT.NET</span></a>
+  <div class="site-nav__links px">
+    <a href="#features">FEATURES</a>
+    <a href="#patches">PATCHES</a>
+    <a href="#compatibility">COMPATIBILITY</a>
+    <a href="#multiboot">MULTIBOOT</a>
+    <a href="#download" class="key">DOWNLOAD</a>
+    <a href="https://github.com/nekuz0r/ki-rom" rel="external">GITHUB</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="arena" data-selected="ki1">
+    <article class="panel panel--ki1" id="panel-ki1" tabindex="0" aria-label="Killer Instinct, 1994, Rare Ltd">
+      <h1 class="px t-title">KILLER<br><span class="key">INSTINCT</span></h1>
+      <p class="px t-credit">1994&nbsp;&nbsp;RARE LTD</p>
+      <figure class="fighter">
+        <img id="sprite-ki1" src="assets/img/ki1_fulgore.png" alt="Fulgore sprite" width="240" height="320">
+        <figcaption class="px" id="name-ki1">FULGORE</figcaption>
+      </figure>
+      <span class="brackets" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </article>
+    <div class="seam" aria-hidden="true"></div>
+    <article class="panel panel--ki2" id="panel-ki2" tabindex="0" aria-label="Killer Instinct 2, 1996, Rare Ltd">
+      <h1 class="px t-title">KILLER<br><span class="key">INSTINCT 2</span></h1>
+      <p class="px t-credit">1996&nbsp;&nbsp;RARE LTD</p>
+      <figure class="fighter">
+        <img id="sprite-ki2" src="assets/img/ki2_jago.png" alt="Jago sprite" width="240" height="320">
+        <figcaption class="px" id="name-ki2">JAGO</figcaption>
+      </figure>
+      <span class="brackets" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </article>
+  </div>
+  <div class="hud">
+    <p class="px hud-tag">OPEN SOURCE BOOT ROM&nbsp;&nbsp;·&nbsp;&nbsp;ANY IDE DRIVE&nbsp;&nbsp;·&nbsp;&nbsp;BOTH BOARD REVISIONS</p>
+    <div class="bar bar--drain" aria-hidden="true"><span></span></div>
+    <p class="cta">
+      <a class="btn btn--steel px" href="#download">[ DOWNLOAD V2.0.1 ]</a>
+      <a class="btn px" href="https://github.com/nekuz0r/ki-rom" rel="external">[ VIEW ON GITHUB ]</a>
+    </p>
+  </div>
+</header>
+
+<main>
+
+<section class="titlecard" id="features">
+  <div class="titlecard__card">
+    <h2 class="px wordmark">SINGLE<br><span class="key">BOOT ROM</span></h2>
+    <hr class="rule">
+    <p class="px rev">REVISION 2.0.1</p>
+    <p class="px sub">AGPL-3.0&nbsp;&nbsp;OPEN SOURCE</p>
+    <p class="blurb">A drop-in replacement for the stock U98 boot ROM. One image per board and game version, flashed once.</p>
+  </div>
+  <ul class="feature-grid">
+    <li class="feature-cell"><h3 class="px">ANY IDE DRIVE</h3><p>No drive-model check — CF, SD, DOM and SSD adapters all boot.</p></li>
+    <li class="feature-cell"><h3 class="px">BOTH BOARD REVISIONS</h3><p>KI-U96 A-19489 and KI2-U96 A-20351 — KI1 and KI2 each run on either board.</p></li>
+    <li class="feature-cell"><h3 class="px">RUNTIME PATCHES</h3><p>The game ROM is patched in memory at boot — nothing on disk is modified.</p></li>
+    <li class="feature-cell"><h3 class="px">FAST BOOT</h3><p>LZSS-compressed game image loads faster than the stock ROM path.</p></li>
+    <li class="feature-cell"><h3 class="px">BOOT OPTIONS</h3><p>Dipswitch-selectable boot sounds and pause-on-boot, plus a new boot chime.</p></li>
+    <li class="feature-cell"><h3 class="px">MAME FRIENDLY</h3><p>Fixes the no-sound-at-boot issue under emulation.</p></li>
+  </ul>
+  <div class="bar bar--divider" aria-hidden="true"><span></span></div>
+  <p class="px bar-label">LOADING FEATURES&nbsp;&nbsp;&nbsp;6 OF 6</p>
+</section>
+
+<section class="patches" id="patches">
+  <h2 class="px section-head">PATCHING&nbsp;&nbsp;&nbsp;GAME ROM AT BOOT</h2>
+  <dl class="patch-list">
+    <div><dt class="px">ANY-IDE</dt><dd>Boot from any IDE-compatible drive — the drive-model check is removed</dd><span class="px status-ok">OK</span></div>
+    <div><dt class="px">I/O REMAP</dt><dd>KI1 on KI2 hardware and vice versa — I/O addresses translated live</dd><span class="px status-ok">OK</span></div>
+    <div><dt class="px">A-20383 BYPASS</dt><dd>KI1→KI2 upgrade-kit copy protection disabled</dd><span class="px status-ok">OK</span></div>
+    <div><dt class="px">SOFT RESET</dt><dd>P1 UP + P1 START + P1 FP resets the game from the panel</dd><span class="px status-ok">OK</span></div>
+    <div><dt class="px">ATTRACT MUSIC</dt><dd>No fade-out — attract-mode music plays indefinitely</dd><span class="px status-ok">OK</span></div>
+    <div><dt class="px">2-IN-1 HDD</dt><dd>Both games on one drive, selected at boot</dd><span class="px status-ok">OK</span></div>
+    <div><dt class="px">NO WHITEBLOOD</dt><dd>Restores red blood on KI 1.5d / 1.5di</dd><span class="px status-ok">OK</span></div>
+  </dl>
+</section>
+
+<section class="compat" id="compatibility">
+  <h2 class="px section-head">COMPATIBILITY CHECK</h2>
+  <div class="compat-grid">
+    <div class="compat-panel">
+      <h3 class="px compat-panel__head">KI-U96&nbsp;&nbsp;A-19489</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th class="px">ROM VERSION</th><th class="px">STATUS</th><th class="px">NOTE</th></tr></thead>
+        <tbody>
+          <tr class="row-ki1"><td>KI L1.5D</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki1"><td>KI L1.5DI</td><td class="status-ok px">OK</td><td>unofficial ROM</td></tr>
+          <tr class="row-ki1"><td>KI L1.4</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki1"><td>KI L1.3</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki1"><td>KI P47</td><td class="status-warn px">PARTIAL</td><td>needs full original hardware</td></tr>
+          <tr class="row-ki2"><td>KI2 L1.0</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.1</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.3</td><td class="status-no px">NO</td><td>use KI2 L1.3K</td></tr>
+          <tr class="row-ki2"><td>KI2 L1.3K</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.4</td><td class="status-no px">NO</td><td>use KI2 L1.4K</td></tr>
+          <tr class="row-ki2"><td>KI2 L1.4K</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.4P</td><td class="status-no px">NO</td><td>unofficial ROM</td></tr>
+          <tr class="row-ki2"><td>KI2 D1.4P</td><td class="status-ok px">OK</td><td>unofficial ROM</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="compat-panel compat-panel--ember">
+      <h3 class="px compat-panel__head">KI2-U96&nbsp;&nbsp;A-20351</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th class="px">ROM VERSION</th><th class="px">STATUS</th><th class="px">NOTE</th></tr></thead>
+        <tbody>
+          <tr class="row-ki1"><td>KI L1.5D</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki1"><td>KI L1.5DI</td><td class="status-ok px">OK</td><td>unofficial ROM</td></tr>
+          <tr class="row-ki1"><td>KI L1.4</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki1"><td>KI L1.3</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki1"><td>KI P47</td><td class="status-no px">NO</td><td>needs remap patch</td></tr>
+          <tr class="row-ki2"><td>KI2 L1.0</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.1</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.3</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.3K</td><td class="status-no px">NO</td><td>use KI2 L1.3</td></tr>
+          <tr class="row-ki2"><td>KI2 L1.4</td><td class="status-ok px">OK</td><td></td></tr>
+          <tr class="row-ki2"><td>KI2 L1.4K</td><td class="status-no px">NO</td><td>use KI2 L1.4</td></tr>
+          <tr class="row-ki2"><td>KI2 L1.4P</td><td class="status-ok px">OK</td><td>unofficial ROM</td></tr>
+          <tr class="row-ki2"><td>KI2 D1.4P</td><td class="status-no px">NO</td><td>unofficial ROM</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+  <div class="compat-panel compat-matrix">
+    <h3 class="px compat-panel__head">PATCH MATRIX</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th class="px">ROM VERSION</th><th class="px">I/O REMAP</th><th class="px">A-20383 BYPASS</th><th class="px">ANY-IDE</th><th class="px">2-IN-1 HDD</th><th class="px">RESET</th><th class="px">NO FADE</th><th class="px">NO WHITEBLOOD</th></tr></thead>
+      <tbody>
+        <tr class="row-ki1"><td>KI L1.5D</td><td class="status-ok px">OK</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td></tr>
+        <tr class="row-ki1"><td>KI L1.5DI</td><td class="status-ok px">OK</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td></tr>
+        <tr class="row-ki1"><td>KI L1.4</td><td class="status-ok px">OK</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki1"><td>KI L1.3</td><td class="status-ok px">OK</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki2"><td>KI2 L1.4</td><td>—</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki2"><td>KI2 L1.4K</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki2"><td>KI2 L1.3</td><td>—</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki2"><td>KI2 L1.3K</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki2"><td>KI2 L1.1</td><td class="status-ok px">OK</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+        <tr class="row-ki2"><td>KI2 L1.0</td><td class="status-ok px">OK</td><td>—</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td class="status-ok px">OK</td><td>—</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section class="multiboot" id="multiboot">
+  <div class="multiboot__inner">
+    <h2 class="px mb-title"><span class="steel">KI1</span>&nbsp;&nbsp;⇄&nbsp;&nbsp;<span class="ember">KI2</span></h2>
+    <p class="px mb-sub">MULTIBOOT — BOTH GAMES ON ONE BOARD, SWAPPED FROM THE CONTROL PANEL</p>
+    <figure class="crt">
+      <!-- html-validate-disable-next no-autoplay -- deliberate: muted decorative loop; main.js strips autoplay and adds controls when prefers-reduced-motion is set -->
+      <video class="swap-video" muted autoplay loop playsinline preload="metadata"
+             poster="assets/video/poster.png" width="640" height="480">
+        <source src="assets/video/multiboot-swap.mp4" type="video/mp4">
+      </video>
+      <figcaption class="px">HOT-SWAP DEMO — CAPTURED ON MODIFIED MAME</figcaption>
+    </figure>
+    <ul class="status-list">
+      <li><span class="px">DUAL-IMAGE FLASH — BOTH BOOT ROMS ON ONE CHIP</span><span class="px status-ok">DONE</span></li>
+      <li><span class="px">BOOT ROM BANK-SWAP + GAME SELECT SCREEN</span><span class="px status-ok">DONE</span></li>
+      <li><span class="px">PREVIEW ON MODIFIED MAME</span><span class="px status-ok">RUNNING</span></li>
+      <li><span class="px">ADAPTER BOARD FOR REAL HARDWARE</span><span class="px status-warn">IN DEVELOPMENT</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <h2 class="px section-head steel">&lt;&nbsp;&nbsp;SELECT BOARD&nbsp;&nbsp;&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;START = DOWNLOAD</h2>
+  <div class="dl-grid">
+    <div class="dl-panel">
+      <h3 class="px">KI-U96&nbsp;&nbsp;A-19489</h3>
+      <p class="dl-panel__sub">ORIGINAL KI1 BOARD</p>
+      <ul class="px">
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki-l15d.u98">19489-KI-L15D.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki-l15di.u98">19489-KI-L15DI.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki-l14.u98">19489-KI-L14.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki-l13.u98">19489-KI-L13.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki2-l14k.u98">19489-KI2-L14K.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki2-l13k.u98">19489-KI2-L13K.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki2-l11.u98">19489-KI2-L11.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/19489-ki2-l10.u98">19489-KI2-L10.U98</a></li>
+      </ul>
+    </div>
+    <div class="dl-panel dl-panel--ember">
+      <h3 class="px">KI2-U96&nbsp;&nbsp;A-20351</h3>
+      <p class="dl-panel__sub">DEDICATED KI2 BOARD</p>
+      <ul class="px">
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki2-l14.u98">20351-KI2-L14.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki2-l13.u98">20351-KI2-L13.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki2-l11.u98">20351-KI2-L11.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki2-l10.u98">20351-KI2-L10.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki-l15d.u98">20351-KI-L15D.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki-l15di.u98">20351-KI-L15DI.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki-l14.u98">20351-KI-L14.U98</a></li>
+        <li><a href="https://github.com/nekuz0r/ki-rom/releases/latest/download/20351-ki-l13.u98">20351-KI-L13.U98</a></li>
+      </ul>
+    </div>
+  </div>
+  <p class="dl-note px">ALL RELEASES &amp; SOURCE ON <a href="https://github.com/nekuz0r/ki-rom/releases">GITHUB</a>&nbsp;&nbsp;·&nbsp;&nbsp;BURN TO A 4-MBIT EPROM, DROP INTO U98</p>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <p class="px">BOOTROM V2.0.1&nbsp;&nbsp;&nbsp;KI-U96 A-19489 + KI2-U96 A-20351&nbsp;&nbsp;&nbsp;WWW.KILLER-INSTINCT.NET</p>
+  <p class="disclaimer">Fan preservation project — not affiliated with or endorsed by Rare Ltd., Microsoft, or Midway. Killer Instinct and all character artwork remain property of their respective owners.</p>
+  <p class="legal"><a href="https://github.com/nekuz0r/ki-rom/blob/main/LICENSE">AGPL-3.0</a> · <a href="https://github.com/nekuz0r/ki-rom">Source on GitHub</a> · © 2023–2026 Leandre Gohy</p>
+</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>
