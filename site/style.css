@@ -115,16 +115,21 @@ main section, .multiboot { scroll-margin-top: 48px; }
 .brackets i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; }
 
 /* slanted seam */
-.seam {
-  position: absolute; top: -8px; bottom: -8px; left: 50%;
-  width: 9px; transform: skewX(-9deg); z-index: 2;
-  /* single gradient, no nested borders: skewed borders shimmer */
-  background: linear-gradient(90deg,
-    #000 0, #000 2px,
-    var(--seam-edge) 2px, var(--seam-edge) 3px,
-    var(--seam) 3px, var(--seam) 6px,
-    var(--seam-edge) 6px, var(--seam-edge) 7px,
-    #000 7px, #000 9px);
+/* The seam shares the panels' percentage geometry (centerline 54% top,
+   46.5% bottom — the middle of the clip-path gap), so it stays aligned at
+   every viewport size; calc() keeps the line widths fixed in pixels. The
+   black gap either side is the body showing through between the panels. */
+.seam { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.seam::before, .seam::after { content: ""; position: absolute; inset: 0; }
+.seam::before {
+  background: var(--seam-edge);
+  clip-path: polygon(calc(54% - 2.5px) 0, calc(54% + 2.5px) 0,
+                     calc(46.5% + 2.5px) 100%, calc(46.5% - 2.5px) 100%);
+}
+.seam::after {
+  background: var(--seam);
+  clip-path: polygon(calc(54% - 1.5px) 0, calc(54% + 1.5px) 0,
+                     calc(46.5% + 1.5px) 100%, calc(46.5% - 1.5px) 100%);
 }
 
 /* hero HUD */
@@ -280,7 +285,7 @@ main section, .multiboot { scroll-margin-top: 48px; }
   .panel--ki2 { padding-left: 20px; }
   .fighter { margin-top: 22px; }
   .seam {
-    position: static; width: auto; height: 9px; transform: none;
+    position: static; height: 9px;
     background: linear-gradient(180deg,
       #000 0, #000 2px,
       var(--seam-edge) 2px, var(--seam-edge) 3px,
@@ -288,6 +293,7 @@ main section, .multiboot { scroll-margin-top: 48px; }
       var(--seam-edge) 6px, var(--seam-edge) 7px,
       #000 7px, #000 9px);
   }
+  .seam::before, .seam::after { display: none; }
   .brackets { display: none; }
   .arena[data-selected="ki1"] .panel--ki2, .arena[data-selected="ki2"] .panel--ki1 { filter: none; }
   .titlecard { grid-template-columns: 1fr; }
