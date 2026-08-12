@@ -92,7 +92,7 @@ main section, .multiboot { scroll-margin-top: 48px; }
 
 .fighter { margin-top: auto; margin-bottom: 26px; }
 .fighter img {
-  height: 160px; width: auto;
+  height: 320px; width: auto;
   filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .7));
 }
 .fighter figcaption { margin-top: 12px; color: var(--white); font-size: 12px; }
@@ -105,8 +105,8 @@ main section, .multiboot { scroll-margin-top: 48px; }
 .brackets { position: absolute; inset: 12px 6%; pointer-events: none; opacity: 0; }
 .arena[data-selected="ki1"] .panel--ki1 .brackets,
 .arena[data-selected="ki2"] .panel--ki2 .brackets { opacity: 1; animation: pulse 2s ease-in-out infinite; }
-.panel--ki1 .brackets { right: 52%; }
-.panel--ki2 .brackets { left: 52%; }
+.panel--ki1 .brackets { left: 11%; right: 61%; }
+.panel--ki2 .brackets { left: 61%; right: 11%; }
 .brackets i { position: absolute; width: 30px; height: 26px; border: 0 solid var(--steel-hi); }
 .panel--ki2 .brackets i { border-color: #FFC97E; }
 .brackets i:nth-child(1) { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; }
@@ -117,12 +117,14 @@ main section, .multiboot { scroll-margin-top: 48px; }
 /* slanted seam */
 .seam {
   position: absolute; top: -8px; bottom: -8px; left: 50%;
-  width: 9px; background: #000; transform: skewX(-7deg); z-index: 2;
-}
-.seam::after {
-  content: ""; display: block; width: 3px; height: 100%; margin: 0 auto;
-  background: var(--seam);
-  border-left: 1px solid var(--seam-edge); border-right: 1px solid var(--seam-edge);
+  width: 9px; transform: skewX(-9deg); z-index: 2;
+  /* single gradient, no nested borders: skewed borders shimmer */
+  background: linear-gradient(90deg,
+    #000 0, #000 2px,
+    var(--seam-edge) 2px, var(--seam-edge) 3px,
+    var(--seam) 3px, var(--seam) 6px,
+    var(--seam-edge) 6px, var(--seam-edge) 7px,
+    #000 7px, #000 9px);
 }
 
 /* hero HUD */
@@ -277,8 +279,15 @@ main section, .multiboot { scroll-margin-top: 48px; }
   .panel--ki1 { padding-right: 20px; }
   .panel--ki2 { padding-left: 20px; }
   .fighter { margin-top: 22px; }
-  .seam { position: static; width: auto; height: 7px; transform: none; }
-  .seam::after { width: 100%; height: 3px; border: 0; border-top: 1px solid var(--seam-edge); border-bottom: 1px solid var(--seam-edge); }
+  .seam {
+    position: static; width: auto; height: 9px; transform: none;
+    background: linear-gradient(180deg,
+      #000 0, #000 2px,
+      var(--seam-edge) 2px, var(--seam-edge) 3px,
+      var(--seam) 3px, var(--seam) 6px,
+      var(--seam-edge) 6px, var(--seam-edge) 7px,
+      #000 7px, #000 9px);
+  }
   .brackets { display: none; }
   .arena[data-selected="ki1"] .panel--ki2, .arena[data-selected="ki2"] .panel--ki1 { filter: none; }
   .titlecard { grid-template-columns: 1fr; }
