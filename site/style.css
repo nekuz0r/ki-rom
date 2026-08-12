@@ -41,6 +41,7 @@ a { color: var(--steel-hi); text-decoration: none; }
 a:hover, a:focus-visible { color: var(--white); text-decoration: underline; }
 
 main section, .titlecard { max-width: 960px; margin: 0 auto; padding: 48px 24px 24px; }
+main section, .multiboot { scroll-margin-top: 48px; }
 
 .section-head { text-align: center; color: var(--white); font-size: 18px; margin-bottom: 28px; }
 .steel { color: var(--steel); }
@@ -70,6 +71,8 @@ main section, .titlecard { max-width: 960px; margin: 0 auto; padding: 48px 24px 
   transition: filter .3s ease;
   outline: none;
 }
+.panel:focus-visible { outline: 2px solid var(--steel-hi); outline-offset: -6px; }
+.panel--ki2:focus-visible { outline-color: #FFC97E; }
 .panel--ki1 {
   background: linear-gradient(180deg, var(--steel-bg0), var(--steel-bg1));
   clip-path: polygon(0 0, 53.5% 0, 46% 100%, 0 100%);
@@ -177,7 +180,7 @@ main section, .titlecard { max-width: 960px; margin: 0 auto; padding: 48px 24px 
 .patch-list dd { flex: 1; font-size: 13px; }
 .status-ok { color: var(--green); }
 .status-warn { color: var(--ember); }
-.status-no { color: var(--dgrey); }
+.status-no { color: var(--grey); }
 
 /* ===== compatibility ===== */
 .compat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
