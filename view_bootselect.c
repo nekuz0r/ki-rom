@@ -24,6 +24,12 @@ static void render(const uint64_t frame_count)
     set_text_color(0x7FF, 0xAAAA);
     print_xy(0x5A, 0x10, "Multiboot (WIP)");
 
+    // zasset_load() returns NULL when the heap cannot satisfy the allocation.
+    if (!ki1_character || !ki2_character)
+    {
+        return;
+    }
+
     uint16_t color = color_fade_in_out(0x7FF, 0x1F, FADE_SPEED_3S);
     set_text_color(color, color);
     draw_box(ki1_character->width - 5, 0x7, (ki1_character->width * 2) + 5, 0x7 + (ki1_character->height) + 5);
