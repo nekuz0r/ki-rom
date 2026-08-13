@@ -6,6 +6,7 @@
 #include "math.h"
 #include "draw.h"
 #include "video.h"
+#include "cache.h"
 
 extern uint16_t _fgcolor;
 extern uint16_t _bgcolor;
@@ -267,6 +268,25 @@ void draw_horizontal_line(uint16_t x, uint16_t y, uint16_t length, uint16_t colo
 
     uint64_t color64 = ((uint32_t)color << 16) | (uint32_t)color;
     color64 |= color64 << 32;
+
+    while (((uintptr_t)ptr & 31) != 0 && length >= 4)
+    {
+        *(uint64_t *)ptr = color64;
+        ptr += 4;
+        length -= 4;
+    }
+
+    while (length >= 16)
+    {
+        CACHE_OP(CREATE_DIRTY_EXCLUSIVE_D, ptr, 0);
+        ((uint64_t *)ptr)[0] = color64;
+        ((uint64_t *)ptr)[1] = color64;
+        ((uint64_t *)ptr)[2] = color64;
+        ((uint64_t *)ptr)[3] = color64;
+        ptr += 16;
+        length -= 16;
+    }
+
     while (length >= 4)
     {
         *((uint64_t *)ptr) = color64;
@@ -375,6 +395,70 @@ void draw_fill(const uint16_t x0, const uint16_t y0, const uint16_t x1, const ui
     for (uint16_t y = y0; y <= y1; y++)
     {
         draw_horizontal_line(x0, y, x1 - x0 + 1, color);
+    }
+}
+
+/**
+ * Darken every pixel in the rectangle by 2^shift: 1 halves it, 2 quarters it, 3
+ * leaves an eighth. A scrim over what is already on screen rather than a fill.
+ * 4 is the last useful step -- at 5 a five-bit channel has nothing left and the
+ * rectangle is simply black.
+ *
+ * Darkening RGB555 is a shift plus a mask. The shift alone is wrong -- it drags each
+ * channel's low bits into the top of the channel below it -- and the mask is what
+ * clears those bits again. Because that mask also clears the top `shift` bits of
+ * every channel, and so of the pixel as a whole, the identical expression applies to
+ * a whole uint64_t: the bits one pixel bleeds into its neighbour's high end all land
+ * outside the mask. That is four pixels per access, the width draw_horizontal_line
+ * already writes at, where a per-pixel color_lerp() against black would be an order
+ * of magnitude slower for the same result.
+ *
+ * Like draw_fill(), this does not clip -- video_get_ptr() has no bound check, so the
+ * caller owns keeping the rectangle inside 320x240.
+ */
+void draw_fill_darken(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1, const uint8_t shift)
+{
+    // shift 0 would darken nothing, yet the mask below would still strip the low bit
+    // of every channel. Reject it rather than quietly posterising the rectangle.
+    if (x1 < x0 || y1 < y0 || shift == 0 || shift > 4)
+    {
+        return;
+    }
+
+    const uint16_t chan = (uint16_t)(0x1Fu >> shift);
+    const uint16_t mask16 = (uint16_t)(chan | (chan << 5) | (chan << 10));
+    uint64_t mask64 = ((uint32_t)mask16 << 16) | (uint32_t)mask16;
+    mask64 |= mask64 << 32;
+
+    const uint16_t width = x1 - x0 + 1;
+
+    for (uint16_t y = y0; y <= y1; y++)
+    {
+        uint16_t *ptr = video_get_ptr(x0, y);
+        uint16_t *alignedPtr = align_up(ptr, 8);
+        uint16_t length = width;
+
+        while (ptr != alignedPtr && length > 0)
+        {
+            *ptr = (uint16_t)((*ptr >> shift) & mask16);
+            length--;
+            ptr++;
+        }
+
+        while (length >= 4)
+        {
+            uint64_t *block = (uint64_t *)ptr;
+            *block = (*block >> shift) & mask64;
+            length -= 4;
+            ptr += 4;
+        }
+
+        while (length > 0)
+        {
+            *ptr = (uint16_t)((*ptr >> shift) & mask16);
+            length--;
+            ptr++;
+        }
     }
 }
 

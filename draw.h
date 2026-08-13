@@ -70,6 +70,7 @@ void draw_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 void draw_box(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1);
 void draw_fill(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1, uint16_t color);
 void draw_gradient(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1, uint16_t top, uint16_t bottom);
+void draw_fill_darken(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1, const uint8_t shift);
 void draw_image(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key);
 void draw_image_mirror_x(const uint16_t x, const uint16_t y, const image_t *img, uint16_t chroma_key);
 void draw_image_ex(const int16_t x, const int16_t y, const image_t *img, uint16_t chroma_key, const blit_t *opt);

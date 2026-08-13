@@ -323,7 +323,7 @@ static void draw_strip(void)
     }
 
     set_text_color(DARK_GREY, 0xAAAA);
-    print_center(160, FOOTER_Y, "BOOTROM V2.0.1   " KI_BOARD_STR "   WWW.KILLER-INSTINCT.NET");
+    print_center(160, FOOTER_Y, "BOOTROM V2.1.0   " KI_BOARD_STR "   WWW.KILLER-INSTINCT.NET");
 }
 
 static void render(const uint64_t frame_count)
@@ -346,7 +346,6 @@ static void render(const uint64_t frame_count)
         primed = true;
     }
 
-    video_clear_framebuffer(0x0);
     draw_title_card();
     draw_strip();
 

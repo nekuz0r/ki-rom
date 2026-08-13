@@ -165,6 +165,7 @@ RAMCODE_FN void bootrom_swap(const uint8_t bank)
     asm volatile(
         ".set noreorder\n"
         "lui $t0,0xBFC0\n"
+        "ori $t0,$t0,_reset_boot\n"
         "jr $t0\n"
         "nop\n"
         : : : "$8");

@@ -35,5 +35,6 @@ void view_switch(view_t *view);
  * in the ROM window at 0x9FCxxxxx -- too far for jal to encode.
  */
 extern void _reset(view_t *view) __attribute__((noreturn, far));
+extern void _reset_boot(void) __attribute__((noreturn, far));
 
 #endif

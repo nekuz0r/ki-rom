@@ -20,8 +20,6 @@
 {
         video_init();
         sound_init();
-        // The HUD no longer reports IDE status and nothing else here reads it, so
-        // the result is discarded rather than bound to a variable -Wall flags.
         ide_init();
         time_init();
         srand(ticks());
@@ -38,9 +36,6 @@
                 view_current->render(frame_counter);
 
 #if defined(DEBUG)
-                // The HUD's own draw cost is deliberately outside the sample: the
-                // number is for tuning the view. If the HUD ever costs a frame it
-                // shows up as FPS falling to 30, not as inflated render time.
                 debug_hud_render((uint32_t)(clock() - render_start));
 #endif
                 video_vsync_wait();

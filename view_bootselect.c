@@ -199,7 +199,7 @@ static void draw_hud(const uint16_t key)
     }
 
     set_text_color(DARK_GREY, 0xAAAA);
-    print_center(160, 228, "BOOTROM V2.0.1   " KI_BOARD_STR "   WWW.KILLER-INSTINCT.NET");
+    print_center(160, 228, "BOOTROM V2.1.0   " KI_BOARD_STR "   WWW.KILLER-INSTINCT.NET");
 }
 
 static const uint8_t banks[BOOTSELECT_ENTRIES] = {
@@ -233,14 +233,12 @@ static const uint8_t banks[BOOTSELECT_ENTRIES] = {
         bootrom_swap(bank);
     }
 
-    _reset(&view_main);
+    _reset_boot();
 }
 
 static void render(const uint64_t frame_count)
 {
     (void)frame_count;
-
-    video_clear_framebuffer(0);
 
     // Unselected first: the selected side's brackets are allowed to sit over the
     // seam, so it has to be painted last.

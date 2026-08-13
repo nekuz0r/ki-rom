@@ -50,10 +50,19 @@
 #define HUD_FPS_GOOD (50)
 #define HUD_FPS_WARN (25)
 
-#define HUD_BG RGB555(0, 0, 0)
-#define HUD_BORDER RGB555(5, 5, 7)
-#define HUD_GRID RGB555(7, 7, 9)
-#define HUD_LABEL RGB555(9, 9, 11)
+// The card interior is a scrim, not a fill: it darkens whatever the view drew there
+// rather than painting over it. 1 == half brightness, 2 == a quarter, 3 == an eighth.
+// A quarter is the balance point: the screen behind the card still reads, and the
+// bars and both text rows still sit on something close enough to black to be crisp.
+#define HUD_SCRIM_SHIFT (2)
+
+// The chrome has to read against the scrim rather than against black. At a quarter
+// the backdrop tops out around (7,7,7), so the values these started at (5/7/9) would
+// sink into bright content -- lifted just clear of that ceiling, which keeps the
+// card's dark character while preserving the ordering and the slight blue cast.
+#define HUD_BORDER RGB555(9, 9, 12)
+#define HUD_GRID RGB555(12, 12, 15)
+#define HUD_LABEL RGB555(16, 16, 19)
 #define HUD_VALUE RGB555(31, 31, 31)
 #define HUD_GOOD RGB555(4, 29, 6)
 #define HUD_WARN RGB555(31, 24, 4)
@@ -166,9 +175,20 @@ static void hud_sample(uint32_t render_us, uint64_t now_ms)
 
 static void hud_draw_card(void)
 {
-    // draw_box takes its edge colour from the text foreground and its fill from
-    // the text background, so one set_text_color does both.
-    set_text_color(HUD_BORDER, HUD_BG);
+    // A scrim rather than a fill. main.c runs the HUD after view_current->render(),
+    // so the pixels under the card are final and darkening them leaves the screen
+    // behind it visible -- which is the point on view_bootselect, where there is no
+    // free corner and the card has to sit over the KI2 panel. Reading the frame
+    // buffer back is only safe because both views clear it at the top of every
+    // render(); a view that drew incrementally would see the scrim compound frame
+    // over frame until the card went black. The rectangle is exactly the one
+    // draw_box would otherwise have filled.
+    draw_fill_darken(HUD_X0 + 1, HUD_Y0 + 1, HUD_X1 - 1, HUD_Y1 - 1, HUD_SCRIM_SHIFT);
+
+    // draw_box takes its edge colour from the text foreground and its fill from the
+    // text background, so one set_text_color does both. HUD_TRANSPARENT is what
+    // makes it skip the fill and leave the scrim standing.
+    set_text_color(HUD_BORDER, HUD_TRANSPARENT);
     draw_box(HUD_X0, HUD_Y0, HUD_X1, HUD_Y1);
 }
 

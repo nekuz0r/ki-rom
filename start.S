@@ -50,6 +50,11 @@ _exception_handler:
     .set macro
     li v0,0x0
     mtc0 v0,CP0_COUNT
+    j _reset_boot
+    nop
+
+.globl _reset_boot
+_reset_boot:
     la a0,KI_BOOT_VIEW
     j _reset
     nop

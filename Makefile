@@ -20,6 +20,13 @@ MULTIBOOT ?= 0
 DEBUG_FLAGS = $(if $(filter 1,$(DEBUG)),-DDEBUG)
 MULTIBOOT_FLAGS = $(if $(filter 1,$(MULTIBOOT)),-DHDD_2IN1 -DROM_2IN1)
 
+# C optimization level. -O2 rather than -Os: both hard budgets absorb it (~184K
+# of ROM free, ~4K under the .data+.bss ceiling) and the per-frame hot code
+# stays under the 16K I-cache -- which -O3 grazes and -funroll-loops blows past.
+# I-cache refills come from the boot EPROM, so oversized code is punished hard.
+# Overridable per invocation (make rom OPT=-Os) for size/codegen comparisons.
+OPT ?= -O2
+
 # ?= reads the environment, and DEBUG is a name people export in shell profiles.
 # Without this, `DEBUG=true` is silently indistinguishable from `DEBUG=0`.
 ifneq ($(filter-out 0 1,$(DEBUG)),)
@@ -89,8 +96,8 @@ ${BOOT_VIEW_STAMP}: force
 
 build/${BOARD}-${ROM}-start.o: ${BOOT_VIEW_STAMP}
 
-# Same problem as BOOT_VIEW above, one level worse. DEBUG and MULTIBOOT arrive on
-# the command line or from the environment, so nothing on disk changes when they
+# Same problem as BOOT_VIEW above, one level worse. OPT, DEBUG, and MULTIBOOT
+# arrive on the command line or from the environment, so nothing on disk changes when they
 # do and the objects -- named for BOARD and ROM alone -- keep whatever flags they
 # were first built with. The .elf rule's prerequisites include .PHONY targets, so
 # the link re-runs regardless and the build cheerfully emits a fresh .u98 built
@@ -100,11 +107,11 @@ FLAGS_STAMP = build/${BOARD}-${ROM}-flags.stamp
 
 ${FLAGS_STAMP}: force
 	@mkdir -p $(@D)
-	@echo '${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}' | cmp -s - $@ || echo '${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}' > $@
+	@echo '${OPT} ${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}' | cmp -s - $@ || echo '${OPT} ${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}' > $@
 
 build/${BOARD}-${ROM}-%.o: %.c ${FLAGS_STAMP}
 	mkdir -p $(@D)
-	$(CC) -MMD -MP -std=gnu23 -Os -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} ${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}
+	$(CC) -MMD -MP -std=gnu23 ${OPT} -mplt -G 0 -mno-abicalls -mabi=o64 -msym32 -c -EL -march=r4600 $< -o $@ -I. -Ilibs/ -Wall -ffreestanding -D${KI_BOARD} -D${KI_ROM} -D${KI_VARIANT} -DZROM=${ROM} ${DEBUG_FLAGS} ${MULTIBOOT_FLAGS}
 # -mstrict-align
 
 # A .ramcode function keeps running while the ROM window holds a different
