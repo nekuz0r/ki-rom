@@ -7,6 +7,27 @@
 #include "interrupts.h"
 #include "delay.h"
 #include "io.h"
+#include "wdt.h"
+
+/*
+ * Busy-wait that keeps the watchdog fed. The MAX705 window is ~1.6s, and the
+ * boot path between the strobe in start.S and the one in main()'s loop spends
+ * far longer than that in here when the DCS does not answer.
+ */
+static void sound_udelay(uint32_t us)
+{
+    while (us >= 1000)
+    {
+        wdt_reset();
+        udelay(1000);
+        us -= 1000;
+    }
+
+    if (us > 0)
+    {
+        udelay(us);
+    }
+}
 
 static void sound_reset(void)
 {
@@ -14,7 +35,7 @@ static void sound_reset(void)
     gIO.soundReset = 0;
     udelay(400);
     gIO.soundReset = 1;
-    udelay(80000);
+    sound_udelay(80000);
     gIO.soundData = 1;
     interrupts_restore(irq);
 }
@@ -26,6 +47,14 @@ static uint8_t sound_wait_ready(void)
         if ((gIO.soundControl & 0x2) != 0)
         {
             return 1;
+        }
+
+        // Each iteration is an uncached read, so a full timeout runs for
+        // hundreds of milliseconds; without this the watchdog fires first and
+        // the timeout can never be reached.
+        if ((i & 0xFFF) == 0)
+        {
+            wdt_reset();
         }
     }
     return 0;
@@ -106,6 +135,6 @@ void sound_init(void)
 {
     sound_reset();          // Reset DCS
     sound_write_byte(0x00); // Send a byte to force boot, skip self-test
-    udelay(100000);         // Wait a least 100ms
+    sound_udelay(100000);   // Wait a least 100ms
     sound_set_volume(0x80); // Set volume to max
 }
